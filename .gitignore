@@ -1,0 +1,17 @@
+# Arquivos gerados pelo sistema de Build
+/build
+/.idea
+/.gradle
+/local.properties
+*.iml
+*.apk
+*.aab
+
+# Arquivos do Android Studio
+.DS_Store
+captures/
+.externalNativeBuild/
+*.keystore
+
+# Arquivos de log
+/app/src/main/generated/
