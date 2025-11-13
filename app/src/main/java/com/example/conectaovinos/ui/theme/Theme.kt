@@ -16,14 +16,14 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = PetNaturaGreen,           // Cor principal para botões, app bars, etc.
-    onPrimary = WhiteText,              // Cor do texto SOBRE a cor primária (IMPORTANTE para contraste!)
-    secondary = PetNaturaPeach,         // Cor para botões de ação flutuantes, destaques.
-    onSecondary = PetNaturaDarkText,    // Texto sobre a cor secundária.
-    background = PetNaturaLightGray,    // Cor de fundo principal do app.
-    onBackground = PetNaturaDarkText,   // Cor do texto principal sobre o fundo.
-    surface = PetNaturaLightGray,       // Cor de superfície para Cards, menus.
-    onSurface = PetNaturaDarkText,      // Cor do texto sobre superfícies.
+    primary = PetNaturaGreen,
+    onPrimary = WhiteText,
+    secondary = PetNaturaPeach,
+    onSecondary = PetNaturaDarkText,
+    background = PetNaturaLightGray,
+    onBackground = PetNaturaDarkText,
+    surface = PetNaturaLightGray,
+    onSurface = PetNaturaDarkText,
 
 )
 
@@ -65,7 +65,7 @@ fun ConectaOvinosTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography, // Este vem do arquivo Typography.kt
+        typography = Typography,
         content = content
     )
 }

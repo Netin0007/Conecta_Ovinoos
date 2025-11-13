@@ -15,10 +15,12 @@ import androidx.navigation.NavController
 import com.example.conectaovinos.models.Animal
 
 import com.example.conectaovinos.ProductListItem
+import com.example.conectaovinos.dummyProductList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateAdScreen(navController: NavController, animalId: String?) {
+    // Buscamos na lista de produtos
     val animal = remember { dummyProductList.find { it.id == animalId } as? Animal }
 
     var price by remember { mutableStateOf("") }
@@ -87,8 +89,8 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
 
             Button(
                 onClick = {
-                    navController.navigate(BottomNavScreen.Inventory.route) {
-                        popUpTo(BottomNavScreen.Inventory.route) { inclusive = true }
+                    navController.navigate("inventory") {
+                        popUpTo("inventory") { inclusive = true }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()

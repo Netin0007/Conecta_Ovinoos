@@ -1,6 +1,5 @@
 package com.example.conectaovinos.models
 
-// O "CONTRATO"
 sealed interface Produto {
     val id: String
     val nome: String
@@ -8,7 +7,6 @@ sealed interface Produto {
     val custo: Double
 }
 
-// TIPO ESPECÍFICO 1: ANIMAL
 data class Animal(
     override val id: String,
     override val nome: String, // Antes era 'identification'
@@ -18,7 +16,6 @@ data class Animal(
     val dataNascimento: String
 ) : Produto
 
-// TIPO ESPECÍFICO 2: PRODUTO DERIVADO
 data class ProdutoDerivado(
     override val id: String,
     override val nome: String,

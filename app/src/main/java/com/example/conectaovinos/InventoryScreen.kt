@@ -22,8 +22,6 @@ import com.example.conectaovinos.models.ProdutoDerivado
 import java.text.NumberFormat
 import java.util.*
 
-// 1. DADOS FALSOS ATUALIZADOS
-// Nossa nova lista de PRODUTOS, contendo tanto Animais quanto Produtos Derivados.
 val dummyProductList = listOf<Produto>(
     Animal(id = "1", nome = "Mococa 01", raca = "Santa Inês", dataNascimento = "10/05/2023", custo = 250.0),
     ProdutoDerivado(id = "p1", nome = "Queijo de Cabra Artesanal", unidadeDeMedida = "Peça de 500g", custo = 15.0),
@@ -32,14 +30,13 @@ val dummyProductList = listOf<Produto>(
     Animal(id = "3", nome = "Fumacinha", raca = "SRD", dataNascimento = "25/08/2022", custo = 220.0),
 )
 
-// 2. A TELA PRINCIPAL DO INVENTÁRIO (ANTIGA HERDSCREEN)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Meu Inventário") }, // Título atualizado
+                title = { Text("Meu Inventário") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -49,7 +46,6 @@ fun InventoryScreen(navController: NavController) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    // Por enquanto, ainda leva para o formulário antigo. Vamos mudar isso no próximo passo.
                     navController.navigate("add_product_form")
                 },
                 containerColor = MaterialTheme.colorScheme.secondary
@@ -67,9 +63,7 @@ fun InventoryScreen(navController: NavController) {
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(dummyProductList) { product ->
-                // Usando nosso novo ListItem inteligente
                 ProductListItem(product = product, onClick = {
-                    // A navegação de detalhes precisará ser ajustada no futuro para lidar com diferentes tipos de produtos
                     if (product is Animal) {
                         navController.navigate("animal_details/${product.id}")
                     }
@@ -79,7 +73,6 @@ fun InventoryScreen(navController: NavController) {
     }
 }
 
-// 3. O NOVO E INTELIGENTE ITEM DA LISTA
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductListItem(product: Produto, onClick: () -> Unit) {
@@ -93,14 +86,13 @@ fun ProductListItem(product: Produto, onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_herd), // Usaremos um ícone genérico por enquanto
+                painter = painterResource(id = R.drawable.ic_herd),
                 contentDescription = "Foto de ${product.nome}",
                 modifier = Modifier.size(64.dp)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Coluna com as informações que mudam
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = product.nome,
@@ -119,7 +111,6 @@ fun ProductListItem(product: Produto, onClick: () -> Unit) {
                 }
             }
 
-            // Coluna para o Custo
             Column(horizontalAlignment = Alignment.End) {
                 Text("Custo", style = MaterialTheme.typography.labelSmall)
                 Text(
@@ -133,7 +124,6 @@ fun ProductListItem(product: Produto, onClick: () -> Unit) {
     }
 }
 
-// Função auxiliar para formatar um número Double como moeda brasileira (R$)
 private fun formatCurrency(value: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
 }

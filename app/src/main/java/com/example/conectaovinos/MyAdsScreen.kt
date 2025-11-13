@@ -22,7 +22,6 @@ data class Ad(
     val status: String = "Ativo"
 )
 
-// Dados falsos de anúncios, usando a lista de produtos principal
 val dummyAdList = dummyProductList
     .filterIsInstance<Animal>()
     .take(2)
@@ -35,7 +34,6 @@ val dummyAdList = dummyProductList
         )
     }
 
-// A tela "Meus Anúncios"
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAdsScreen(navController: NavController) {
@@ -64,7 +62,6 @@ fun MyAdsScreen(navController: NavController) {
     }
 }
 
-// O item individual da lista de anúncios
 @Composable
 fun AdListItem(ad: Ad) {
     Card(
