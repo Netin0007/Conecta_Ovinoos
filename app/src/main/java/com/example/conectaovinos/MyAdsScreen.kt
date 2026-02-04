@@ -7,21 +7,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-
 import com.example.conectaovinos.models.Animal
+import java.text.NumberFormat
+import java.util.*
 
+// Modelo de dados para o Anúncio
 data class Ad(
     val id: String,
     val animal: Animal,
-    val price: String,
+    val price: Double,
     val description: String,
     val status: String = "Ativo"
 )
 
+// Simulando anúncios baseados na nossa lista de produtos
 val dummyAdList = dummyProductList
     .filterIsInstance<Animal>()
     .take(2)
@@ -29,8 +33,8 @@ val dummyAdList = dummyProductList
         Ad(
             id = "ad${index + 1}",
             animal = animal,
-            price = if (animal.raca == "Dorper") "R$ 750,00" else "R$ 680,00",
-            description = "Ótimo exemplar da raça ${animal.raca}."
+            price = animal.custo * 1.4, // Preço de venda com margem
+            description = "Excelente exemplar para reprodução."
         )
     }
 
@@ -40,7 +44,7 @@ fun MyAdsScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Meus Anúncios") },
+                title = { Text("Meus Anúncios", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -48,15 +52,25 @@ fun MyAdsScreen(navController: NavController) {
             )
         }
     ) { innerPadding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(dummyAdList) { ad ->
-                AdListItem(ad = ad)
+            if (dummyAdList.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Você ainda não possui anúncios ativos.", color = Color.Gray)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(dummyAdList) { ad ->
+                        AdListItem(ad = ad)
+                    }
+                }
             }
         }
     }
@@ -66,12 +80,19 @@ fun MyAdsScreen(navController: NavController) {
 fun AdListItem(ad: Ad) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            ProductListItem(product = ad.animal, onClick = {})
+            // A CORREÇÃO: Atualizado para usar o novo componente visual EnhancedProductListItem
+            EnhancedProductListItem(product = ad.animal, onClick = {})
 
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                thickness = 0.5.dp,
+                color = Color.LightGray
+            )
 
             Row(
                 modifier = Modifier
@@ -80,16 +101,32 @@ fun AdListItem(ad: Ad) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = ad.price,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-                Text(
-                    text = "Status: ${ad.status}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Column {
+                    Text(
+                        text = "Preço no Mercado",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(ad.price),
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp
+                    )
+                }
+
+                Surface(
+                    color = Color(0xFFE3F2FD),
+                    shape = androidx.compose.foundation.shape.CircleShape
+                ) {
+                    Text(
+                        text = ad.status,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color(0xFF1976D2),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

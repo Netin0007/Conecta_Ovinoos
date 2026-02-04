@@ -17,16 +17,15 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.example.conectaovinos.ui.theme.ConectaOvinosTheme
+import com.example.conectaovinos.ui.theme.*
 
-
+// Importação de todas as telas do projeto
 import com.example.conectaovinos.InventoryScreen
 import com.example.conectaovinos.AddProductScreen
 import com.example.conectaovinos.AnimalDetailsScreen
 import com.example.conectaovinos.CreateAdScreen
 import com.example.conectaovinos.MyAdsScreen
-import com.example.conectaovinos.FinancialScreen
-import com.example.conectaovinos.AddTransactionScreen
-import com.example.conectaovinos.AddManejoScreen
+import com.example.conectaovinos.DashboardScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,33 +69,32 @@ fun MainScreen() {
             startDestination = BottomNavScreen.Inventory.route,
             Modifier.padding(innerPadding)
         ) {
-            // Rotas das Abas
+            // Aba 1: Inventário de Animais e Produtos
             composable(BottomNavScreen.Inventory.route) { InventoryScreen(navController) }
-            composable(BottomNavScreen.Ads.route) { MyAdsScreen(navController) }
-            composable(BottomNavScreen.Finance.route) { FinancialScreen(navController) }
 
-            // Rotas de Formulários e Detalhes
+            // Aba 2: Gestão de Anúncios no Marketplace
+            composable(BottomNavScreen.Ads.route) { MyAdsScreen(navController) }
+
+            // Aba 3: Painel do Investidor (Financeiro)
+            composable(BottomNavScreen.Dashboard.route) { DashboardScreen(navController) }
+
+            // Rotas de formulários e detalhes (fora da barra principal)
             composable("add_product_form") { AddProductScreen(navController) }
-            composable("add_transaction_form") { AddTransactionScreen(navController) }
 
             composable("animal_details/{animalId}") { backStackEntry ->
                 val animalId = backStackEntry.arguments?.getString("animalId")
                 AnimalDetailsScreen(navController, animalId)
             }
+
             composable("create_ad_form/{animalId}") { backStackEntry ->
                 val animalId = backStackEntry.arguments?.getString("animalId")
                 CreateAdScreen(navController, animalId)
-            }
-
-            // A NOVA ROTA PARA O FORMULÁRIO DE MANEJO
-            composable("add_manejo_form/{animalId}") { backStackEntry ->
-                val animalId = backStackEntry.arguments?.getString("animalId")
-                AddManejoScreen(navController, animalId)
             }
         }
     }
 }
 
+// Tela de Login (Simulada para o MVP)
 @Composable
 fun AuthenticationScreen(navController: NavController) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -105,27 +103,29 @@ fun AuthenticationScreen(navController: NavController) {
                 popUpTo(AppScreen.Authentication.route) { inclusive = true }
             }
         }) {
-            Text("Login / Cadastro (Simulado)")
+            Text("Entrar no Conecta:Ovinos")
         }
     }
 }
 
+// Componente da Barra de Navegação Inferior
 @Composable
 fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
         BottomNavScreen.Inventory,
         BottomNavScreen.Ads,
-        BottomNavScreen.Finance
+        BottomNavScreen.Dashboard
     )
     NavigationBar {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
+
         items.forEach { screen ->
             NavigationBarItem(
                 label = { Text(screen.title) },
                 icon = {
                     Icon(
-                        painterResource(id = screen.icon),
+                        painter = painterResource(id = screen.icon),
                         contentDescription = screen.title
                     )
                 },
@@ -142,14 +142,15 @@ fun BottomNavigationBar(navController: NavController) {
     }
 }
 
-
+// Definição das Rotas Principais
 sealed class AppScreen(val route: String) {
     object Authentication : AppScreen("authentication")
     object Main : AppScreen("main")
 }
 
+// Definição das Abas da Barra Inferior
 sealed class BottomNavScreen(val route: String, val title: String, val icon: Int) {
     object Inventory : BottomNavScreen("inventory", "Inventário", R.drawable.ic_herd)
     object Ads : BottomNavScreen("ads", "Anúncios", R.drawable.ic_ads)
-    object Finance : BottomNavScreen("finance", "Finanças", R.drawable.ic_finance)
+    object Dashboard : BottomNavScreen("dashboard", "Financeiro", R.drawable.ic_finance)
 }

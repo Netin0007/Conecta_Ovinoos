@@ -125,7 +125,7 @@ fun AddTransactionScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 4. LÓGICA: Botão de Salvar
+            //Botão de Salvar
             Button(
                 onClick = {
                     navController.navigateUp()
