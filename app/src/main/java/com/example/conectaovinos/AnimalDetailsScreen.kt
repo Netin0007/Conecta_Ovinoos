@@ -1,72 +1,90 @@
 package com.example.conectaovinos
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.Animal
-import com.example.conectaovinos.models.EventoManejo
-import com.example.conectaovinos.models.TipoManejo
-import java.text.SimpleDateFormat
-import java.util.*
-
-val dummyEventList = listOf(
-    EventoManejo(id = "e1", tipo = TipoManejo.Vacinacao, data = Date(), descricao = "Vacina Aftosa (Dose 1)", animalId = "1"),
-    EventoManejo(id = "e2", tipo = TipoManejo.Pesagem, data = Date(System.currentTimeMillis() - 86400000L * 30), descricao = "Peso: 45 Kg", animalId = "1"),
-    EventoManejo(id = "e3", tipo = TipoManejo.Reproducao, data = Date(System.currentTimeMillis() - 86400000L * 60), descricao = "Cobrição com Macho 05", animalId = "1")
-)
-private val sdf = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
-fun Date.format(): String = sdf.format(this)
-
+import com.example.conectaovinos.database.entities.AnimalEntity
+import com.example.conectaovinos.viewmodel.AnimalViewModel
+import com.example.conectaovinos.viewmodel.ManejoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
-    val animal = dummyProductList.find { it.id == animalId } as? Animal
-    val animalEvents = dummyEventList.filter { it.animalId == animalId }
+fun AnimalDetailsScreen(
+    navController: NavController,
+    animalId: Int?,
+    animalViewModel: AnimalViewModel,
+    manejoViewModel: ManejoViewModel
+){
+    // ✅ se vier nulo, não tenta consultar Room
+    val id = animalId
+    if (id == null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Detalhes do Animal") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.navigateUp() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("ID do animal inválido.")
+            }
+        }
+        return
+    }
+
+    // 🔹 Animal do banco
+    var animal by remember { mutableStateOf<AnimalEntity?>(null) }
+
+    // 🔹 Lista de manejos do banco (agora com Int certo)
+    val manejos by manejoViewModel
+        .getManejosByAnimal(id)
+        .collectAsState(initial = emptyList())
+
+    // Buscar animal no banco
+    LaunchedEffect(id) {
+        animal = animalViewModel.getAnimalById(id)
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = animal?.nome ?: "Detalhes do Animal") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
+                title = { Text(animal?.nome ?: "Detalhes do Animal") },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 }
             )
         }
-    ) { innerPadding ->
+    ) { padding ->
+
         if (animal == null) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Animal não encontrado.")
+                Text("Animal não encontrado no banco")
             }
             return@Scaffold
         }
@@ -74,30 +92,30 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+                .padding(padding)
+                .padding(16.dp)
         ) {
-            AnimalInfoPanel(animal = animal)
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // 🔹 Botões
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(
-                    onClick = {
-                        navController.navigate("add_manejo_form/${animal.id}")
-                    },
+                    onClick = { navController.navigate("add_manejo_form/$id") },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Registar Evento")
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Registrar Manejo")
                 }
+
                 Spacer(modifier = Modifier.width(16.dp))
+
                 Button(
-                    onClick = { navController.navigate("create_ad_form/${animal.id}") },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    onClick = { navController.navigate("create_ad_form/$id") },
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text("Anunciar")
                 }
@@ -106,24 +124,16 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
             Spacer(modifier = Modifier.height(16.dp))
             Divider()
 
-            Text(
-                "Histórico de Manejo (RF06)",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            Text("Histórico de Manejo", style = MaterialTheme.typography.titleMedium)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             LazyColumn {
-                items(animalEvents) { evento ->
-                    EventListItem(evento = evento)
+                items(manejos) { manejo ->
+                    // EventListItem(manejo)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
     }
 }
-
-
-@Composable
-fun AnimalInfoPanel(animal: Animal) { /* ... */ }
-
-@Composable
-fun EventListItem(evento: EventoManejo) { /* ... */ }

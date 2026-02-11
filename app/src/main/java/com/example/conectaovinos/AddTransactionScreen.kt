@@ -17,12 +17,18 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.conectaovinos.database.entities.TransacaoEntity
 import com.example.conectaovinos.models.TipoTransacao
+import com.example.conectaovinos.viewmodel.TransacaoViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTransactionScreen(navController: NavController) {
+fun AddTransactionScreen(
+    navController: NavController,
+    transacaoViewModel: TransacaoViewModel = viewModel()
+) {
 
     var selectedType by remember { mutableStateOf(TipoTransacao.Despesa) }
     var descricao by remember { mutableStateOf("") }
@@ -34,22 +40,15 @@ fun AddTransactionScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { Text("Adicionar Transação") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar")
                     }
                 }
             )
         }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -57,7 +56,9 @@ fun AddTransactionScreen(navController: NavController) {
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+
             Text("Tipo de Transação:", style = MaterialTheme.typography.titleMedium)
+
             Row(Modifier.selectableGroup()) {
                 TipoTransacao.values().forEach { tipo ->
                     Row(
@@ -70,67 +71,74 @@ fun AddTransactionScreen(navController: NavController) {
                             .padding(horizontal = 8.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(
-                            selected = (selectedType == tipo),
-                            onClick = null
-                        )
+                        RadioButton(selected = selectedType == tipo, onClick = null)
                         Text(
-                            text = if(tipo == TipoTransacao.Receita) "Receita" else "Despesa",
+                            text = if (tipo == TipoTransacao.Receita) "Receita" else "Despesa",
                             modifier = Modifier.padding(start = 8.dp),
-                            color = if(tipo == TipoTransacao.Receita) Color(0xFF008000) else Color.Red,
+                            color = if (tipo == TipoTransacao.Receita) Color(0xFF008000) else Color.Red,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // 3. UI: Campos do formulário
             OutlinedTextField(
                 value = descricao,
                 onValueChange = { descricao = it },
-                label = { Text("Descrição (ex: Compra de ração, Venda de queijo)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label = { Text("Descrição") },
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = valor,
                 onValueChange = { valor = it },
                 label = { Text("Valor (R$)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = categoria,
                 onValueChange = { categoria = it },
-                label = { Text("Categoria (ex: Insumos, Saúde, Venda de Animal)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label = { Text("Categoria") },
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(16.dp))
+
+            Spacer(Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = data,
                 onValueChange = { data = it },
-                label = { Text("Data (ex: 07/11/2025)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                label = { Text("Data (dd/MM/yyyy)") },
+                modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(32.dp))
 
-            //Botão de Salvar
             Button(
+                modifier = Modifier.fillMaxWidth(),
                 onClick = {
+
+                    val valorDouble = valor.toDoubleOrNull() ?: 0.0
+
+                    val transacao = TransacaoEntity(
+                        tipo = selectedType.name,
+                        descricao = descricao,
+                        valor = valorDouble,
+                        categoria = categoria,
+                        data = data
+                    )
+
+                    transacaoViewModel.addTransacao(transacao)
+
                     navController.navigateUp()
-                },
-                modifier = Modifier.fillMaxWidth()
+                }
             ) {
                 Text("SALVAR TRANSAÇÃO")
             }

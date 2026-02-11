@@ -15,13 +15,25 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.database.entities.AnimalEntity
+import com.example.conectaovinos.viewmodel.AnimalViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateAdScreen(navController: NavController, animalId: String?) {
+fun CreateAdScreen(
+    navController: NavController,
+    animalId: Int?,
+    animalViewModel: AnimalViewModel
+) {
 
-    val animal = remember { dummyProductList.find { it.id == animalId } as? Animal }
+    var animal by remember { mutableStateOf<AnimalEntity?>(null) }
+
+    // 🔹 Busca animal no banco
+    LaunchedEffect(animalId) {
+        if (animalId != null) {
+            animal = animalViewModel.getAnimalById(animalId)
+        }
+    }
 
     var price by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -46,6 +58,8 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
             )
         }
     ) { innerPadding ->
+
+        // 🔴 Caso animal não exista
         if (animal == null) {
             Box(Modifier.fillMaxSize().padding(innerPadding)) {
                 Text("Animal não encontrado.", modifier = Modifier.padding(16.dp))
@@ -60,6 +74,7 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+
             Text(
                 text = "Você está anunciando:",
                 style = MaterialTheme.typography.titleMedium,
@@ -67,8 +82,8 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            // A CORREÇÃO: Usando o nome correto da função que criamos no InventoryScreen
-            EnhancedProductListItem(product = animal, onClick = {})
+            // 🔹 Painel com dados reais do banco
+//            AnimalInfoPanel(animal!!)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -86,11 +101,7 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 prefix = { Text("R$ ") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.secondary,
-                    focusedLabelColor = MaterialTheme.colorScheme.secondary
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -99,7 +110,7 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
                 value = description,
                 onValueChange = { description = it },
                 label = { Text("Descrição para o comprador") },
-                placeholder = { Text("Ex: Animal dócil, bem cuidado, vacinação em dia...") },
+                placeholder = { Text("Ex: Animal saudável, vacinado, bem tratado...") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp),
@@ -108,35 +119,17 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Botão com estilo "Investidor"
             Button(
                 onClick = {
-                    navController.navigate(BottomNavScreen.Ads.route) {
-                        popUpTo(BottomNavScreen.Inventory.route) { inclusive = false }
-                    }
+                    // 🔹 Aqui depois você salva anúncio no banco
+                    navController.navigateUp()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                )
+                    .height(56.dp)
             ) {
-                Text(
-                    "PUBLICAR ANÚNCIO",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("PUBLICAR ANÚNCIO", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-
-            Text(
-                text = "Ao publicar, seu anúncio ficará visível para todos os produtores da região.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
-                modifier = Modifier.padding(top = 16.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-            )
         }
     }
 }

@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.conectaovinos.database.entities.AnimalEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -13,13 +14,24 @@ import kotlinx.coroutines.flow.Flow
 
 
 @Dao
-interface AnimalDao{
+interface AnimalDao {
+
     @Query("SELECT * FROM animals")
-    fun getall(): Flow<List<AnimalEntity>>
+    fun getAll(): Flow<List<AnimalEntity>>
+
+    @Query("SELECT * FROM animals WHERE id = :id LIMIT 1")
+    suspend fun getAnimalById(id: Int?): AnimalEntity?
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(animal : AnimalEntity)
+    suspend fun insert(animal: AnimalEntity)
+
+    @Update
+    suspend fun updateAnimal(animal: AnimalEntity)
+
+    @Delete
+    suspend fun deleteAnimal(animal: AnimalEntity)
 
     @Query("DELETE FROM animals")
-    suspend fun deleteAll()
+    suspend fun deleteAllAnimals()
 }

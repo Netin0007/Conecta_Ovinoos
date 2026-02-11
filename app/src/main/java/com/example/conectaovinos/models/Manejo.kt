@@ -10,10 +10,10 @@ enum class TipoManejo {
     Alimentacao
 }
 
-data class EventoManejo(
-    val id: String,
-    val tipo: TipoManejo,
-    val data: Date,
-    val descricao: String,
-    val animalId: String
-)
+//data class EventoManejo(
+//    val id: String,
+//    val tipo: TipoManejo,
+//    val data: Date,
+//    val descricao: String,
+//    val animalId: String
+//)
