@@ -86,7 +86,6 @@ fun AddTransactionScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. UI: Campos do formulário
             OutlinedTextField(
                 value = descricao,
                 onValueChange = { descricao = it },
@@ -125,7 +124,6 @@ fun AddTransactionScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            //Botão de Salvar
             Button(
                 onClick = {
                     navController.navigateUp()

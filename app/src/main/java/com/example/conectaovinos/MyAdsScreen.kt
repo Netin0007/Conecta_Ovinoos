@@ -1,8 +1,12 @@
 package com.example.conectaovinos
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,63 +17,46 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.ui.theme.*
 import java.text.NumberFormat
 import java.util.*
-
-// Modelo de dados para o Anúncio
-data class Ad(
-    val id: String,
-    val animal: Animal,
-    val price: Double,
-    val description: String,
-    val status: String = "Ativo"
-)
-
-// Simulando anúncios baseados na nossa lista de produtos
-val dummyAdList = dummyProductList
-    .filterIsInstance<Animal>()
-    .take(2)
-    .mapIndexed { index, animal ->
-        Ad(
-            id = "ad${index + 1}",
-            animal = animal,
-            price = animal.custo * 1.4, // Preço de venda com margem
-            description = "Excelente exemplar para reprodução."
-        )
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAdsScreen(navController: NavController) {
+    val activeAds = rebanhoGlobal.filterIsInstance<Animal>().take(2)
+
     Scaffold(
+        containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = { Text("Meus Anúncios", fontWeight = FontWeight.Bold) },
+                title = { Text("OS MEUS ANÚNCIOS", fontWeight = FontWeight.Black) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = TerraBarro,
+                    titleContentColor = Color.White
                 )
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { navController.navigate(BottomNavScreen.Inventory.route) },
+                containerColor = SolNordeste,
+                contentColor = TextoPrincipal,
+                icon = { Icon(Icons.Default.Add, contentDescription = "Novo") },
+                text = { Text("Vender Artigo", fontWeight = FontWeight.Bold) },
+                shape = RoundedCornerShape(12.dp)
             )
         }
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier = Modifier.fillMaxSize().padding(innerPadding)
         ) {
-            if (dummyAdList.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Você ainda não possui anúncios ativos.", color = Color.Gray)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(dummyAdList) { ad ->
-                        AdListItem(ad = ad)
-                    }
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(activeAds) { animal ->
+                    AdItemCard(animal = animal)
                 }
             }
         }
@@ -77,55 +64,60 @@ fun MyAdsScreen(navController: NavController) {
 }
 
 @Composable
-fun AdListItem(ad: Ad) {
+fun AdItemCard(animal: Animal) {
+    val precoSimulado = animal.custo * 1.5
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column {
-            // A CORREÇÃO: Atualizado para usar o novo componente visual EnhancedProductListItem
-            EnhancedProductListItem(product = ad.animal, onClick = {})
-
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                thickness = 0.5.dp,
-                color = Color.LightGray
-            )
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .background(Color(0xFFEFEBE1))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Text(animal.nome.uppercase(), fontWeight = FontWeight.Black, color = TextoPrincipal)
+                Surface(color = VerdeCaatinga, shape = RoundedCornerShape(8.dp)) {
                     Text(
-                        text = "Preço no Mercado",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(ad.price),
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 20.sp
+                        "ATIVO",
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
+            }
 
-                Surface(
-                    color = Color(0xFFE3F2FD),
-                    shape = androidx.compose.foundation.shape.CircleShape
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(50.dp).background(CinzaAreia, RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
+                    Text("🐑", fontSize = 24.sp)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Preço no Mercado", fontSize = 12.sp, color = Color.Gray)
                     Text(
-                        text = ad.status,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color(0xFF1976D2),
-                        fontWeight = FontWeight.Bold
+                        NumberFormat.getCurrencyInstance(Locale("pt", "PT")).format(precoSimulado),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = SolNordeste
                     )
+                }
+                OutlinedButton(
+                    onClick = { /* Lógica para editar a implementar no futuro */ },
+                    border = androidx.compose.foundation.BorderStroke(1.dp, TerraBarro),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TerraBarro),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("EDITAR", fontWeight = FontWeight.Bold)
                 }
             }
         }

@@ -2,43 +2,46 @@ package com.example.conectaovinos
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.TipoManejo
+import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddManejoScreen(navController: NavController, animalId: String?) {
+fun AddManejoScreen(navController: NavController) {
+    val animais = rebanhoGlobal.filterIsInstance<Animal>()
 
-    var selectedType by remember(animalId) { mutableStateOf(TipoManejo.Vacinacao) }
-    var descricao by remember(animalId) { mutableStateOf("") }
-    var data by remember(animalId) { mutableStateOf("") }
+    var animalSelecionado by remember { mutableStateOf("") }
+    var tipoManejo by remember { mutableStateOf("") }
+    var dataManejo by remember { mutableStateOf("") }
+    var observacoes by remember { mutableStateOf("") }
+
+    var expandedAnimal by remember { mutableStateOf(false) }
 
     Scaffold(
+        containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = { Text("Registar Evento de Manejo") },
+                title = { Text("REGISTRAR MANEJO", fontWeight = FontWeight.Black) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = TerraBarro,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
                 ),
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 }
             )
@@ -48,36 +51,54 @@ fun AddManejoScreen(navController: NavController, animalId: String?) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            val animal = dummyProductList.find { it.id == animalId }
             Text(
-                "A registar para: ${animal?.nome ?: "Animal desconhecido"}",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
+                "DADOS DO MANEJO",
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            // 2. LÓGICA: Seletor de Tipo de Manejo
-            Text("Tipo de Evento:", style = MaterialTheme.typography.titleSmall)
-            Column(Modifier.selectableGroup()) {
-                TipoManejo.values().forEach { tipo ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = (selectedType == tipo),
-                                onClick = { selectedType = tipo },
-                                role = Role.RadioButton
-                            )
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = (selectedType == tipo),
-                            onClick = null
+            ExposedDropdownMenuBox(
+                expanded = expandedAnimal,
+                onExpandedChange = { expandedAnimal = !expandedAnimal }
+            ) {
+                OutlinedTextField(
+                    value = animalSelecionado.ifEmpty { "Selecione o animal..." },
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Qual animal?") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAnimal) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = TerraBarro,
+                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                ExposedDropdownMenu(
+                    expanded = expandedAnimal,
+                    onDismissRequest = { expandedAnimal = false }
+                ) {
+                    if (animais.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("Nenhum animal no rebanho") },
+                            onClick = { expandedAnimal = false }
                         )
-                        Text(text = tipo.name, modifier = Modifier.padding(start = 8.dp))
+                    } else {
+                        animais.forEach { animal ->
+                            DropdownMenuItem(
+                                text = { Text("${animal.nome} (${animal.raca})") },
+                                onClick = {
+                                    animalSelecionado = animal.nome
+                                    expandedAnimal = false
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -85,31 +106,68 @@ fun AddManejoScreen(navController: NavController, animalId: String?) {
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = descricao,
-                onValueChange = { descricao = it },
-                label = { Text("Descrição (ex: Vacina X, 55 Kg)") },
+                value = tipoManejo,
+                onValueChange = { tipoManejo = it },
+                label = { Text("Tipo (Ex: Vacina, Vermífugo, Pesagem)") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = TerraBarro,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = data,
-                onValueChange = { data = it },
-                label = { Text("Data (ex: 07/11/2025)") },
+                value = dataManejo,
+                onValueChange = { dataManejo = it },
+                label = { Text("Data do Manejo") },
+                placeholder = { Text("DD/MM/AAAA") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = TerraBarro,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 4. Observações
+            OutlinedTextField(
+                value = observacoes,
+                onValueChange = { observacoes = it },
+                label = { Text("Observações (Opcional)") },
+                modifier = Modifier.fillMaxWidth().height(100.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = TerraBarro,
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = {
+                    /* adicionar na lista de manejos do animal */
                     navController.navigateUp()
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SolNordeste,
+                    contentColor = TextoPrincipal
+                ),
+                elevation = ButtonDefaults.buttonElevation(6.dp)
             ) {
-                Text("SALVAR EVENTO")
+                Text("REGISTRAR NO HISTÓRICO", fontWeight = FontWeight.Black, fontSize = 16.sp)
             }
         }
     }
