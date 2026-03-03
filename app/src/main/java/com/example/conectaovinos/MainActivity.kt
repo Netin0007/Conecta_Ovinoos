@@ -128,9 +128,16 @@ fun ProducerMainScreen(onLogout: () -> Unit) {
             composable(BottomNavScreen.Inventory.route) { InventoryScreen(navController, onLogout) }
             composable(BottomNavScreen.Dashboard.route) { DashboardScreen(navController) }
             composable(BottomNavScreen.Ads.route) { MyAdsScreen(navController) }
+
+            composable(BottomNavScreen.Community.route) { CommunityScreen(navController) }
+
             composable("add_product_form") { AddProductScreen(navController) }
-            composable("animal_details/{animalId}") { backStackEntry -> AnimalDetailsScreen(navController, backStackEntry.arguments?.getString("animalId")) }
-            composable("create_ad_form/{animalId}") { backStackEntry -> CreateAdScreen(navController, backStackEntry.arguments?.getString("animalId")) }
+            composable("animal_details/{animalId}") { backStackEntry ->
+                AnimalDetailsScreen(navController, backStackEntry.arguments?.getString("animalId"))
+            }
+            composable("create_ad_form/{animalId}") { backStackEntry ->
+                CreateAdScreen(navController, backStackEntry.arguments?.getString("animalId"))
+            }
         }
     }
 }
@@ -150,19 +157,26 @@ fun ConsumerMainScreen(onLogout: () -> Unit) {
 
 @Composable
 fun ProducerBottomNavigationBar(navController: NavController) {
-    val items = listOf(BottomNavScreen.Inventory, BottomNavScreen.Dashboard, BottomNavScreen.Ads)
+    val items = listOf(
+        BottomNavScreen.Inventory,
+        BottomNavScreen.Dashboard,
+        BottomNavScreen.Ads,
+        BottomNavScreen.Community
+    )
     NavigationBar(containerColor = TerraBarro, contentColor = Color.White) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
         items.forEach { screen ->
             val selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
             NavigationBarItem(
-                label = { Text(screen.title, color = if(selected) SolNordeste else Color.White) },
+                label = { Text(screen.title, color = if(selected) SolNordeste else Color.White, fontSize = 10.sp) },
                 icon = { Icon(painterResource(id = screen.icon), contentDescription = null) },
                 selected = selected,
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = TerraBarro, selectedTextColor = SolNordeste,
-                    indicatorColor = SolNordeste, unselectedIconColor = Color.White.copy(alpha = 0.6f)
+                    selectedIconColor = TerraBarro,
+                    selectedTextColor = SolNordeste,
+                    indicatorColor = SolNordeste,
+                    unselectedIconColor = Color.White.copy(alpha = 0.6f)
                 ),
                 onClick = {
                     navController.navigate(screen.route) {
@@ -183,7 +197,10 @@ fun ConsumerBottomNavigationBar(navController: NavController) {
             label = { Text("Feira", color = SolNordeste) },
             icon = { Text("🛒", fontSize = 20.sp) },
             selected = true,
-            colors = NavigationBarItemDefaults.colors(selectedIconColor = TerraBarro, indicatorColor = SolNordeste),
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = TerraBarro,
+                indicatorColor = SolNordeste
+            ),
             onClick = { }
         )
     }
@@ -198,5 +215,6 @@ sealed class AppScreen(val route: String) {
 sealed class BottomNavScreen(val route: String, val title: String, val icon: Int) {
     object Inventory : BottomNavScreen("inventory", "Rebanho", R.drawable.ic_herd)
     object Dashboard : BottomNavScreen("dashboard", "Lucros", R.drawable.ic_finance)
-    object Ads : BottomNavScreen("ads", "Vendas", R.drawable.ic_ads)
+    object Ads : BottomNavScreen("ads", "Vendas", R.drawable.ic_prosa)
+    object Community : BottomNavScreen("community", "Prosa", R.drawable.ic_ads)
 }
