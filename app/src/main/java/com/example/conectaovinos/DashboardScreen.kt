@@ -7,21 +7,44 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.conectaovinos.database.DatabaseProvider
+import com.example.conectaovinos.database.repository.AnimalRepository
 import com.example.conectaovinos.ui.theme.*
+import com.example.conectaovinos.viewmodel.DashboardViewModel
 import java.text.NumberFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(navController: NavController) {
-    val totalCusto = rebanhoGlobal.sumOf { it.custo }
+    val context = LocalContext.current
+    val db = DatabaseProvider.get(context)
+    val repo = AnimalRepository(db.animalDao())
+
+    val viewModel: DashboardViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return DashboardViewModel(repo) as T
+            }
+        }
+    )
+
+    val animais = viewModel.animais.collectAsState().value
+
+    val totalCusto = animais.sumOf { it.preco }
     val totalVendasPotencial = totalCusto * 1.6
     val lucroEstimado = totalVendasPotencial - totalCusto
 
@@ -51,7 +74,12 @@ fun DashboardScreen(navController: NavController) {
                 shape = RoundedCornerShape(4.dp)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text("LUCRO ESTIMADO", color = Color.White.copy(alpha = 0.8f), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(
+                        "LUCRO ESTIMADO",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
                     Text(
                         text = formatCurrency(lucroEstimado),
                         color = SolNordeste,
@@ -109,6 +137,3 @@ fun DashboardSmallCard(label: String, value: Double, color: Color, modifier: Mod
     }
 }
 
-private fun formatCurrency(value: Double): String {
-    return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
-}

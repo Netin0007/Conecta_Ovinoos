@@ -8,10 +8,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -24,28 +27,43 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.example.conectaovinos.database.entities.MarketplaceItemUi
 import com.example.conectaovinos.models.Animal
 import com.example.conectaovinos.ui.theme.*
+import com.example.conectaovinos.viewmodel.MarketplaceViewModel
 import java.text.NumberFormat
 import java.util.*
 
+
+
+// =======================
+// TELA (dados do banco)
+// =======================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
+fun MarketplaceScreen(
+    navController: NavController,
+    viewModel: MarketplaceViewModel,
+    onLogout: () -> Unit = {}
+) {
     var searchQuery by remember { mutableStateOf("") }
     var categoriaSelecionada by remember { mutableStateOf("Todos") }
-    val categorias = listOf("Todos", "Animais", "Derivados", "Equipamentos")
+    val categorias = listOf("Todos", "Animais", "Derivados") // agora derivados funciona
 
-    val anunciosDisponiveis = rebanhoGlobal.filter {
-        (categoriaSelecionada == "Todos" ||
-                (categoriaSelecionada == "Animais" && it is Animal) ||
-                (categoriaSelecionada == "Derivados" && it !is Animal)) &&
-                it.nome.contains(searchQuery, ignoreCase = true)
+    val itens = viewModel.itens.collectAsState().value
+
+    val anunciosDisponiveis = itens.filter { item ->
+        (categoriaSelecionada == "Todos" || item.categoria == categoriaSelecionada) &&
+                item.nome.contains(searchQuery, ignoreCase = true)
     }
 
     Scaffold(
@@ -75,6 +93,7 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
             item(span = { GridItemSpan(2) }) {
                 Column(
                     modifier = Modifier
@@ -105,11 +124,9 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Ex: Ovelha Santa Inês, Queijo...", color = Color.Gray) },
+                        placeholder = { Text("Ex: Ovelha, Queijo...", color = Color.Gray) },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Pesquisar", tint = TerraBarro) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
@@ -125,7 +142,8 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
 
             item(span = { GridItemSpan(2) }) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(categorias) { categoria ->
+                    items(categorias.size) { idx ->
+                        val categoria = categorias[idx]
                         FilterChip(
                             selected = categoriaSelecionada == categoria,
                             onClick = { categoriaSelecionada = categoria },
@@ -180,24 +198,30 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
 
             if (anunciosDisponiveis.isEmpty()) {
                 item(span = { GridItemSpan(2) }) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text("Nenhum produto encontrado.", color = Color.Gray)
                     }
                 }
             } else {
-                items(anunciosDisponiveis) { produto ->
-                    MarketplaceGridCard(produto = produto)
+                items(anunciosDisponiveis) { item ->
+                    MarketplaceGridCard(item = item)
                 }
             }
         }
     }
 }
 
+// =======================
+// CARD
+// =======================
 @Composable
-fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto) {
-    val precoVenda = produto.custo * 1.5
-    val isAnimal = produto is Animal
-    val raca = if (produto is Animal) produto.raca else "Derivado"
+fun MarketplaceGridCard(item: MarketplaceItemUi) {
+    val precoVenda = item.custo * 1.5
+    val isAnimal = item.categoria == "Animais"
+
     var isFavorite by remember { mutableStateOf(false) }
 
     Card(
@@ -214,10 +238,24 @@ fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto) {
                     .background(Brush.verticalGradient(colors = listOf(CinzaAreia, Color(0xFFE2DED4)))),
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (isAnimal) "🐑" else "🧀", fontSize = 64.sp)
+                if (!item.fotoUri.isNullOrBlank()) {
+                    AsyncImage(
+                        model = item.fotoUri,
+                        contentDescription = item.nome,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(if (isAnimal) "🐑" else "🧀", fontSize = 64.sp)
+                }
+
                 IconButton(
                     onClick = { isFavorite = !isFavorite },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(32.dp).background(Color.White.copy(alpha = 0.7f), CircleShape)
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(32.dp)
+                        .background(Color.White.copy(alpha = 0.7f), CircleShape)
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
@@ -229,9 +267,19 @@ fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto) {
             }
 
             Column(modifier = Modifier.padding(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(
-                        text = produto.nome.uppercase(), fontWeight = FontWeight.Black, fontSize = 14.sp, color = TextoPrincipal, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                        text = item.nome.uppercase(),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 14.sp,
+                        color = TextoPrincipal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Star, contentDescription = null, tint = SolNordeste, modifier = Modifier.size(12.dp))
@@ -239,9 +287,16 @@ fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto) {
                     }
                 }
 
-                Text(text = raca, color = Color.Gray, fontSize = 11.sp, maxLines = 1)
+                Text(text = "subtitulo", color = Color.Gray, fontSize = 11.sp, maxLines = 1)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(precoVenda), fontWeight = FontWeight.Black, fontSize = 16.sp, color = VerdeCaatinga)
+
+                Text(
+                    text = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(precoVenda),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                    color = VerdeCaatinga
+                )
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -251,6 +306,7 @@ fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto) {
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
+
                 Button(
                     onClick = { },
                     modifier = Modifier.fillMaxWidth().height(36.dp),

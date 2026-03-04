@@ -29,9 +29,7 @@ val dummyTransactionList = listOf(
     Transacao(id = "4", descricao = "Medicamentos (Vermífugo)", valor = 80.0, tipo = TipoTransacao.Despesa, data = Date(), categoria = "Saúde")
 )
 
-private fun formatCurrency(value: Double): String {
-    return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

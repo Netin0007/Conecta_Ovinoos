@@ -138,6 +138,9 @@ fun ProducerMainScreen(onLogout: () -> Unit) {
             composable("create_ad_form/{animalId}") { backStackEntry ->
                 CreateAdScreen(navController, backStackEntry.arguments?.getString("animalId"))
             }
+            composable("marketplace") {
+                MarketplaceScreenRoute(navController, onLogout = { /* logout */ })
+            }
         }
     }
 }
@@ -149,8 +152,17 @@ fun ConsumerMainScreen(onLogout: () -> Unit) {
         containerColor = CinzaAreia,
         bottomBar = { ConsumerBottomNavigationBar(navController = navController) }
     ) { innerPadding ->
-        NavHost(navController, startDestination = "marketplace", Modifier.padding(innerPadding)) {
-            composable("marketplace") { MarketplaceScreen(navController, onLogout) }
+        NavHost(
+            navController,
+            startDestination = "marketplace",
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable("marketplace") {
+                MarketplaceScreenRoute(
+                    navController = navController,
+                    onLogout = onLogout
+                )
+            }
         }
     }
 }

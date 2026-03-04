@@ -152,6 +152,6 @@ fun DetailItem(icon: ImageVector, label: String, value: String, modifier: Modifi
     }
 }
 
-private fun formatCurrency(value: Double): String {
+fun formatCurrency(value: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
 }
