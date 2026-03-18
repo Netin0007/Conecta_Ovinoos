@@ -14,6 +14,6 @@ data class ProdutosEntity (
     val tipo: tipoProduto,
     val preco: Double,
     val quantidade: String,
-    val fotoUri: String?= null
-
+    val fotoUri: String?= null,
+    val isFavorite: Boolean = false
 )

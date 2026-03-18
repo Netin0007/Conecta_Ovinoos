@@ -1,79 +1,86 @@
 # 🐑 Conecta:Ovinos
 
-**Um aplicativo Android para fortalecer a agricultura familiar e conectar pequenos produtores ao mercado regional.**
+**Plataforma completa de gestão rural e marketplace para o fortalecimento da ovinocultura familiar.**
 
-![Status](https://img.shields.io/badge/status-MVP%20em%20Desenvolvimento-yellow)
+![Status](https://img.shields.io/badge/status-MVP%20Funcional-green)
 ![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-blueviolet)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-1.6-blue)
-![SDK](https://img.shields.io/badge/Min%20SDK-26-brightgreen)
+![Room](https://img.shields.io/badge/Database-Room-orange)
 
 ---
 
 ## 🎯 Sobre o Projeto
 
-**Conecta:Ovinos** é uma ferramenta de gestão e marketplace pensada para o pequeno produtor rural. O objetivo é substituir o "caderno de anotações" por uma solução digital simples, que não apenas organiza o inventário (animais e produtos derivados), mas também ajuda o produtor a entender seus custos, lucros e a vender sua produção de forma direta e descomplicada.
+O **Conecta:Ovinos** é um ecossistema digital desenvolvido para transformar a realidade do pequeno produtor rural. Ele resolve dois problemas centrais: a falta de controle financeiro/produtivo e a dificuldade de acesso direto ao consumidor final.
 
-A plataforma visa capacitar o produtor a enxergar seu trabalho não apenas como subsistência, mas como um negócio e um investimento.
-
----
-
-## ✨ Funcionalidades do MVP Atual
-
-A versão atual do projeto (MVP) já possui a interface e o fluxo de navegação completos para a **jornada crítica do produtor**:
-
--   ✅ **Gestão de Inventário:** Visualização de uma lista mista de produtos, incluindo animais (ovinos, caprinos) e produtos derivados (queijo, leite, mel, etc.).
--   ✅ **Cadastro de Produtos:** Um formulário inteligente que se adapta para cadastrar diferentes tipos de produtos, com campos específicos para cada um (ex: Raça para animais, Unidade de Medida para derivados).
--   ✅ **Controle de Custos:** O formulário de cadastro já inclui um campo para o "Custo de Produção", o primeiro passo para o controle financeiro.
--   ✅ **Fluxo de Venda:**
-    -   Visualização de detalhes de um animal.
-    -   Formulário para criar um anúncio de venda com preço e descrição.
--   ✅ **Visualização de Anúncios:** Tela para listar os anúncios já criados pelo produtor.
--   🎨 **Design System e Acessibilidade:**
-    -   Interface moderna baseada no Material Design 3.
-    -   Paleta de cores ("Pet Natura") com alto contraste, pensada para boa visibilidade em diferentes condições de iluminação.
-    -   Uso de fontes escaláveis (`sp`) e alvos de toque grandes para garantir a acessibilidade.
+O aplicativo funciona em dois modos principais:
+1.  **Modo Produtor:** Uma ferramenta de gestão técnica e financeira (ERP Rural).
+2.  **Modo Comprador (Feira):** Um marketplace para consumidores encontrarem produtos frescos e animais diretamente da origem.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🏗️ Arquitetura e Estrutura
 
-Este projeto foi construído com as tecnologias mais modernas recomendadas pelo Google para o desenvolvimento Android:
+O projeto segue os princípios da **Clean Architecture** e o padrão **MVVM (Model-View-ViewModel)**, garantindo separação de responsabilidades e facilidade de manutenção.
 
--   **Linguagem:** [Kotlin](https://kotlinlang.org/)
--   **Interface Gráfica:** [Jetpack Compose](https://developer.android.com/jetpack/compose)
--   **Arquitetura:** Baseada em MVVM (Model-View-ViewModel)
--   **Navegação:** [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
--   **Design:** [Material Design 3](https://m3.material.io/)
+### 📂 Organização de Pastas (`app/src/main/java/com/example/conectaovinos/`)
 
----
-
-## 🚀 Como Executar o Projeto
-
-1.  **Clone o repositório:**
-    ```bash
-    git clone [https://github.com/Netin0007/Conecta_Ovinos.git](https://github.com/Netin0007/Conecta_Ovinos.git)
-    ```
-2.  **Abra no Android Studio:**
-    -   Abra o Android Studio (versão Hedgehog ou mais recente recomendada).
-    -   Selecione "Open an Existing Project" e aponte para a pasta clonada.
-3.  **Sincronize o Gradle:**
-    -   O Android Studio deve sincronizar o projeto automaticamente. Se não, clique no ícone de "Sync Project with Gradle Files" (elefante com seta).
-4.  **Execute o App:**
-    -   Selecione um emulador ou conecte um dispositivo físico.
-    -   Clique no botão "Run" (▶️).
+-   **`/database`**: Camada de persistência local.
+    -   **`/entities`**: Definição das tabelas (Animal, Produto, Anúncio, Transação).
+    -   **`/dao`**: Interfaces de acesso aos dados (Queries SQL encapsuladas).
+    -   `AppDatabase.kt`: Configuração central do Room com suporte a migrações.
+-   **`/viewmodel`**: Camada de lógica de negócio. Gerencia o estado da UI e a comunicação com o banco de dados usando Coroutines e Flow.
+-   **`/ui/theme`**: Identidade visual do projeto (Cores "Terra Barro", "Sol Nordeste", etc).
+-   **Raiz do Projeto**: Contém as **Screens** (telas em Jetpack Compose) e a lógica de navegação central (`MainActivity.kt`).
 
 ---
 
-## 🔮 Próximos Passos (Handover)
+## ⚙️ Como o Sistema Funciona
 
-O projeto está com a interface e a lógica de navegação prontas. O próximo grande passo é substituir os dados de exemplo (`dummy data`) por uma solução de backend real. A integração planejada é com o **Firebase**.
+### 1. Persistência de Dados (Offline-First)
+Diferente de apps que dependem 100% de internet, o Conecta:Ovinos utiliza o **Room Database**. Isso permite que o produtor cadastre animais e transações mesmo sem sinal no campo. Os dados são salvos localmente e carregados instantaneamente.
 
--   **1. Configurar o Firebase:** Conectar este projeto Android a um novo projeto no console do Firebase.
--   **2. Firebase Authentication:** Substituir a tela de login simulada por um sistema de cadastro/login real (ex: Email e Senha ou Telefone).
--   **3. Cloud Firestore:** Utilizar o Firestore como banco de dados NoSQL para:
-    -   Salvar os produtos cadastrados por cada usuário.
-    -   Salvar os anúncios criados.
-    -   Ler os dados em tempo real para popular as telas de "Inventário" e "Meus Anúncios".
-    -   Aproveitar o suporte offline do Firestore, que é crucial para o público-alvo rural.
+### 2. Gestão Financeira Inteligente
+O sistema financeiro não é apenas uma lista de gastos. Ele cruza dados:
+-   Calcula o **Valor do Rebanho** baseado no custo de aquisição de cada animal vivo.
+-   Gera um **Saldo Geral** automático subtraindo despesas (ração, vacinas) e custos fixos das receitas (vendas de produtos).
+-   Oferece um **Histórico de Movimentações** para auditoria rápida do produtor.
+
+### 3. Ecossistema de Vendas (Marketplace)
+O fluxo de venda é integrado:
+1.  O produtor seleciona um animal do seu inventário.
+2.  Cria um anúncio (o sistema sugere margem de lucro).
+3.  O item aparece automaticamente na **Feira Livre** (Área do Comprador).
+4.  Compradores podem favoritar itens, que ficam salvos em uma aba exclusiva via banco de dados.
 
 ---
+
+## 🚀 Tecnologias e Bibliotecas
+
+-   **Jetpack Compose:** UI declarativa e moderna.
+-   **Room Persistence:** Banco de dados SQL local robusto.
+-   **Kotlin Coroutines & Flow:** Processamento assíncrono para garantir que a interface nunca trave.
+-   **Coil:** Carregamento eficiente de imagens e fotos dos animais.
+-   **Navigation Compose:** Sistema de rotas tipo Single-Activity.
+
+---
+
+## 🛠️ Guia para Desenvolvedores (Handover)
+
+Se você está assumindo este código agora, aqui estão pontos importantes:
+
+-   **Navegação:** Centralizada no `MainActivity.kt`. Se criar uma nova tela, lembre-se de registrar a rota no `NavHost`.
+-   **Banco de Dados:** Ao alterar qualquer `Entity`, você **deve** incrementar a `version` no `AppDatabase.kt`.
+-   **Injeção de Dependência:** Atualmente usamos `ViewModelProvider.Factory` manuais para passar os DAOs para as ViewModels.
+-   **Imagens:** O app suporta `fotoUri`. Certifique-se de tratar permissões de galeria ao implementar o seletor de fotos no futuro.
+
+---
+
+## 🎨 Identidade Visual
+O projeto utiliza uma paleta de cores personalizada que remete ao semiárido brasileiro:
+-   **TerraBarro (#9E3B2C):** Cor principal da marca.
+-   **VerdeCaatinga (#2E5A39):** Representa saúde e lucro.
+-   **SolNordeste (#FFB347):** Destaques e alertas importantes.
+
+---
+*Desenvolvido para transformar o suor do produtor em sucesso garantido.* 🌵🐑

@@ -24,6 +24,9 @@ interface ProdutoDao {
     @Update
     suspend fun updateProduto(produto: ProdutosEntity)
 
+    @Query("UPDATE produtosTable SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun updateFavorite(id: Int, isFavorite: Boolean)
+
     @Query("UPDATE produtosTable SET quantidade = :qtd WHERE id = :id")
     suspend fun updateQuantidade(id: Int, qtd: Int)
 

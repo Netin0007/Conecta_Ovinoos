@@ -10,8 +10,8 @@ import com.example.conectaovinos.database.entities.ProdutosEntity
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class MarketplaceViewModel(
     private val animalDao: AnimalDao,
@@ -25,13 +25,13 @@ class MarketplaceViewModel(
         ) { animais: List<AnimalEntity>, derivados: List<ProdutosEntity> ->
 
             val animaisUi = animais.map { a ->
-                // ✅ AJUSTE NOMES DE CAMPOS SE PRECISAR
                 MarketplaceItemUi(
                     id = a.id,
                     nome = a.nome,
                     custo = a.preco,
                     categoria = "Animais",
-                    fotoUri = a.fotoUri // se não existir no seu AnimalEntity, coloque null
+                    fotoUri = a.fotoUri,
+                    isFavorite = a.isFavorite
                 )
             }
 
@@ -41,11 +41,22 @@ class MarketplaceViewModel(
                     nome = d.nome,
                     custo = d.preco,
                     categoria = "Derivados",
-                    fotoUri = d.fotoUri
+                    fotoUri = d.fotoUri,
+                    isFavorite = d.isFavorite
                 )
             }
 
             // Junta tudo
             animaisUi + derivadosUi
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun toggleFavorite(item: MarketplaceItemUi) {
+        viewModelScope.launch {
+            if (item.categoria == "Animais") {
+                animalDao.updateFavorite(item.id, !item.isFavorite)
+            } else {
+                derivadoDao.updateFavorite(item.id, !item.isFavorite)
+            }
+        }
+    }
 }

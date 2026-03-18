@@ -10,5 +10,6 @@ data class AnimalEntity(
     val nome: String,
     val raca: String,
     val preco: Double,
-    val fotoUri: String? = null
+    val fotoUri: String? = null,
+    val isFavorite: Boolean = false
 )

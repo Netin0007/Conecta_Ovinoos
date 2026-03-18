@@ -6,6 +6,6 @@ data class MarketplaceItemUi(
     val custo: Double,
     val categoria: String, // "Animais", "Derivados", "Equipamentos"
     val raca: String? = null,
-    val fotoUri: String?
-
+    val fotoUri: String?,
+    val isFavorite: Boolean = false
 )

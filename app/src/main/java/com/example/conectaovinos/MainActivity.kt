@@ -6,6 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,14 +51,14 @@ fun AppNavigation() {
         composable(AppScreen.ProducerMain.route) {
             ProducerMainScreen(onLogout = {
                 navController.navigate(AppScreen.Authentication.route) {
-                    popUpTo(0) // Limpa todo o histórico, volta ao início limpo
+                    popUpTo(0)
                 }
             })
         }
         composable(AppScreen.ConsumerMain.route) {
             ConsumerMainScreen(onLogout = {
                 navController.navigate(AppScreen.Authentication.route) {
-                    popUpTo(0) // Limpa todo o histórico, volta ao início limpo
+                    popUpTo(0)
                 }
             })
         }
@@ -128,9 +131,7 @@ fun ProducerMainScreen(onLogout: () -> Unit) {
             composable(BottomNavScreen.Inventory.route) { InventoryScreen(navController, onLogout) }
             composable(BottomNavScreen.Dashboard.route) { DashboardScreen(navController) }
             composable(BottomNavScreen.Ads.route) { MyAdsScreen(navController) }
-
             composable(BottomNavScreen.Community.route) { CommunityScreen(navController) }
-
             composable("add_product_form") { AddProductScreen(navController) }
             composable("animal_details/{animalId}") { backStackEntry ->
                 AnimalDetailsScreen(navController, backStackEntry.arguments?.getString("animalId"))
@@ -138,8 +139,11 @@ fun ProducerMainScreen(onLogout: () -> Unit) {
             composable("create_ad_form/{animalId}") { backStackEntry ->
                 CreateAdScreen(navController, backStackEntry.arguments?.getString("animalId"))
             }
-            composable("marketplace") {
-                MarketplaceScreenRoute(navController, onLogout = { /* logout */ })
+            composable("add_transaction") { AddTransactionScreen(navController) }
+            
+            // Rota de Detalhes de Produto adicionada para o Produtor (opcional, mas bom ter)
+            composable("product_details/{productId}") { backStackEntry ->
+                ProductDetailsScreen(navController, backStackEntry.arguments?.getString("productId"))
             }
         }
     }
@@ -160,8 +164,24 @@ fun ConsumerMainScreen(onLogout: () -> Unit) {
             composable("marketplace") {
                 MarketplaceScreenRoute(
                     navController = navController,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    showOnlyFavorites = false
                 )
+            }
+            composable("favorites") {
+                MarketplaceScreenRoute(
+                    navController = navController,
+                    onLogout = onLogout,
+                    showOnlyFavorites = true
+                )
+            }
+            // Rota de Detalhes de Animal para o Consumidor
+            composable("animal_details/{animalId}") { backStackEntry ->
+                AnimalDetailsScreen(navController, backStackEntry.arguments?.getString("animalId"))
+            }
+            // Rota de Detalhes de Produto para o Consumidor
+            composable("product_details/{productId}") { backStackEntry ->
+                ProductDetailsScreen(navController, backStackEntry.arguments?.getString("productId"))
             }
         }
     }
@@ -204,16 +224,43 @@ fun ProducerBottomNavigationBar(navController: NavController) {
 
 @Composable
 fun ConsumerBottomNavigationBar(navController: NavController) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
     NavigationBar(containerColor = TerraBarro, contentColor = Color.White) {
         NavigationBarItem(
-            label = { Text("Feira", color = SolNordeste) },
-            icon = { Text("🛒", fontSize = 20.sp) },
-            selected = true,
+            label = { Text("Feira", color = if (currentDestination?.route == "marketplace") SolNordeste else Color.White) },
+            icon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
+            selected = currentDestination?.route == "marketplace",
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = TerraBarro,
-                indicatorColor = SolNordeste
+                indicatorColor = SolNordeste,
+                unselectedIconColor = Color.White.copy(alpha = 0.6f)
             ),
-            onClick = { }
+            onClick = {
+                navController.navigate("marketplace") {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        )
+        NavigationBarItem(
+            label = { Text("Favoritos", color = if (currentDestination?.route == "favorites") SolNordeste else Color.White) },
+            icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
+            selected = currentDestination?.route == "favorites",
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = TerraBarro,
+                indicatorColor = SolNordeste,
+                unselectedIconColor = Color.White.copy(alpha = 0.6f)
+            ),
+            onClick = {
+                navController.navigate("favorites") {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
         )
     }
 }

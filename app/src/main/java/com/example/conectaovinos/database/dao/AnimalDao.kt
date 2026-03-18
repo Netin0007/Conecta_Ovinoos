@@ -28,6 +28,9 @@ interface AnimalDao {
     @Update
     suspend fun updateAnimal(animal: AnimalEntity)
 
+    @Query("UPDATE animals SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun updateFavorite(id: Int, isFavorite: Boolean)
+
     @Delete
     suspend fun deleteAnimal(animal: AnimalEntity)
 

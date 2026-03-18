@@ -13,18 +13,28 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.TipoTransacao
+import com.example.conectaovinos.database.DatabaseProvider
+import com.example.conectaovinos.database.enums.tipoTransacao
+import com.example.conectaovinos.viewmodel.AddTransactionViewModel
+import com.example.conectaovinos.viewmodel.AddTransactionViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(navController: NavController) {
+    val context = LocalContext.current
+    val db = DatabaseProvider.get(context)
+    val viewModel: AddTransactionViewModel = viewModel(
+        factory = AddTransactionViewModelFactory(db.transacaoDao())
+    )
 
-    var selectedType by remember { mutableStateOf(TipoTransacao.Despesa) }
+    var selectedType by remember { mutableStateOf(tipoTransacao.Despesa) }
     var descricao by remember { mutableStateOf("") }
     var valor by remember { mutableStateOf("") }
     var categoria by remember { mutableStateOf("") }
@@ -59,7 +69,7 @@ fun AddTransactionScreen(navController: NavController) {
         ) {
             Text("Tipo de Transação:", style = MaterialTheme.typography.titleMedium)
             Row(Modifier.selectableGroup()) {
-                TipoTransacao.values().forEach { tipo ->
+                tipoTransacao.values().forEach { tipo ->
                     Row(
                         Modifier
                             .selectable(
@@ -75,9 +85,9 @@ fun AddTransactionScreen(navController: NavController) {
                             onClick = null
                         )
                         Text(
-                            text = if(tipo == TipoTransacao.Receita) "Receita" else "Despesa",
+                            text = if(tipo == tipoTransacao.Receita) "Receita" else "Despesa",
                             modifier = Modifier.padding(start = 8.dp),
-                            color = if(tipo == TipoTransacao.Receita) Color(0xFF008000) else Color.Red,
+                            color = if(tipo == tipoTransacao.Receita) Color(0xFF008000) else Color.Red,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -126,7 +136,17 @@ fun AddTransactionScreen(navController: NavController) {
 
             Button(
                 onClick = {
-                    navController.navigateUp()
+                    val valorDouble = valor.toDoubleOrNull() ?: 0.0
+                    viewModel.saveTransaction(
+                        tipo = selectedType,
+                        descricao = descricao,
+                        valor = valorDouble,
+                        categoria = categoria,
+                        data = data,
+                        onSuccess = {
+                            navController.navigateUp()
+                        }
+                    )
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {

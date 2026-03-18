@@ -9,14 +9,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,31 +29,30 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.conectaovinos.database.DatabaseProvider
-import com.example.conectaovinos.database.entities.AnimalEntity
 import com.example.conectaovinos.ui.theme.*
-import com.example.conectaovinos.viewmodel.AnimalDetailsViewModel
-import com.example.conectaovinos.viewmodel.AnimalDetailsViewModelFactory
+import com.example.conectaovinos.viewmodel.ProductDetailsViewModel
+import com.example.conectaovinos.viewmodel.ProductDetailsViewModelFactory
 import java.text.NumberFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
+fun ProductDetailsScreen(navController: NavController, productId: String?) {
     val context = LocalContext.current
     val db = DatabaseProvider.get(context)
-    val id = animalId?.toIntOrNull() ?: 0
+    val id = productId?.toIntOrNull() ?: 0
 
-    val viewModel: AnimalDetailsViewModel = viewModel(
-        factory = AnimalDetailsViewModelFactory(db.animalDao(), id)
+    val viewModel: ProductDetailsViewModel = viewModel(
+        factory = ProductDetailsViewModelFactory(db.produtosDao(), id)
     )
 
-    val animal by viewModel.animal.collectAsState()
+    val produto by viewModel.produto.collectAsState()
 
     Scaffold(
         containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = { Text("FICHA DO ANIMAL", fontWeight = FontWeight.Black, fontSize = 16.sp) },
+                title = { Text("DETALHES DO PRODUTO", fontWeight = FontWeight.Black, fontSize = 16.sp) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
                     titleContentColor = Color.White,
@@ -69,14 +66,14 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
             )
         }
     ) { innerPadding ->
-        if (animal == null) {
+        if (produto == null) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = TerraBarro)
             }
             return@Scaffold
         }
 
-        val animalData = animal!!
+        val prodData = produto!!
 
         Column(
             modifier = Modifier
@@ -93,24 +90,24 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        modifier = Modifier.size(120.dp).clip(CircleShape).background(Color.White).padding(4.dp),
+                        modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).padding(4.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (!animalData.fotoUri.isNullOrBlank()) {
+                        if (!prodData.fotoUri.isNullOrBlank()) {
                             AsyncImage(
-                                model = animalData.fotoUri,
-                                contentDescription = animalData.nome,
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                model = prodData.fotoUri,
+                                contentDescription = prodData.nome,
+                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            Text("🐑", fontSize = 64.sp)
+                            Text("🧀", fontSize = 64.sp)
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(animalData.nome.uppercase(), color = SolNordeste, fontSize = 24.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                    Text(prodData.nome.uppercase(), color = SolNordeste, fontSize = 24.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
                     Surface(color = VerdeCaatinga, shape = RoundedCornerShape(16.dp), modifier = Modifier.padding(top = 8.dp)) {
-                        Text(animalData.raca.uppercase(), color = Color.White, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(prodData.tipo.name.uppercase(), color = Color.White, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -130,37 +127,37 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Custo de Produção", fontSize = 12.sp, color = Color.Gray)
-                            Text(formatCurrency(animalData.preco), fontSize = 24.sp, fontWeight = FontWeight.Black, color = VermelhoBarro)
+                            Text("Preço", fontSize = 12.sp, color = Color.Gray)
+                            Text(formatCurrencyInternal(prodData.preco), fontSize = 24.sp, fontWeight = FontWeight.Black, color = VerdeCaatinga)
                         }
                         VerticalDivider(modifier = Modifier.height(40.dp))
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Valor de Venda Est.", fontSize = 12.sp, color = Color.Gray)
-                            Text(formatCurrency(animalData.preco * 1.5), fontSize = 24.sp, fontWeight = FontWeight.Black, color = VerdeCaatinga)
+                            Text("Quantidade", fontSize = 12.sp, color = Color.Gray)
+                            Text(prodData.quantidade, fontSize = 24.sp, fontWeight = FontWeight.Black, color = TextoPrincipal)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("DADOS TÉCNICOS", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
+                Text("INFORMAÇÕES ADICIONAIS", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    DetailItem(icon = Icons.Default.DateRange, label = "ID", value = "#${animalData.id}", modifier = Modifier.weight(1f))
-                    DetailItem(icon = Icons.Default.Info, label = "Status", value = "Em Criação", modifier = Modifier.weight(1f))
+                    DetailItemProd(icon = Icons.Default.List, label = "Estoque", value = prodData.quantidade, modifier = Modifier.weight(1f))
+                    DetailItemProd(icon = Icons.Default.Info, label = "ID", value = "#${prodData.id}", modifier = Modifier.weight(1f))
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
-                    onClick = { navController.navigate("create_ad_form/${animalData.id}") },
+                    onClick = { /* Lógica de compra ou contato */ },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = SolNordeste, contentColor = TextoPrincipal),
+                    colors = ButtonDefaults.buttonColors(containerColor = TerraBarro, contentColor = Color.White),
                     shape = RoundedCornerShape(12.dp),
                     elevation = ButtonDefaults.buttonElevation(6.dp)
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null)
+                    Icon(Icons.Default.ShoppingCart, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("ANUNCIAR PARA VENDA", fontWeight = FontWeight.Black)
+                    Text("ENTRAR EM CONTATO", fontWeight = FontWeight.Black)
                 }
             }
         }
@@ -168,7 +165,7 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
 }
 
 @Composable
-fun DetailItem(icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
+fun DetailItemProd(icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
     Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.Center) {
             Icon(icon, contentDescription = null, tint = TerraBarro, modifier = Modifier.size(24.dp))
@@ -179,6 +176,6 @@ fun DetailItem(icon: ImageVector, label: String, value: String, modifier: Modifi
     }
 }
 
-fun formatCurrency(value: Double): String {
+private fun formatCurrencyInternal(value: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
 }

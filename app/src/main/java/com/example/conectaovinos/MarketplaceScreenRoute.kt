@@ -10,10 +10,10 @@ import com.example.conectaovinos.database.DatabaseProvider
 import com.example.conectaovinos.viewmodel.MarketplaceViewModel
 
 @Composable
-
 fun MarketplaceScreenRoute(
     navController: NavController,
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    showOnlyFavorites: Boolean = false
 ) {
     val context = LocalContext.current
     val db = DatabaseProvider.get(context)
@@ -30,5 +30,10 @@ fun MarketplaceScreenRoute(
         }
     )
 
-    MarketplaceScreen(navController = navController, viewModel = vm, onLogout = onLogout)
+    MarketplaceScreen(
+        navController = navController,
+        viewModel = vm,
+        showOnlyFavorites = showOnlyFavorites,
+        onLogout = onLogout
+    )
 }
