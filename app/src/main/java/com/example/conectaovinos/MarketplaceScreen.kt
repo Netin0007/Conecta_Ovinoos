@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -36,7 +37,11 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
+fun MarketplaceScreen(
+    navController: NavController,
+    onLogout: () -> Unit = {},
+    onSwitchToProducer: () -> Unit = {}
+) {
     var searchQuery by remember { mutableStateOf("") }
     var categoriaSelecionada by remember { mutableStateOf("Todos") }
     val categorias = listOf("Todos", "Animais", "Derivados", "Equipamentos")
@@ -59,8 +64,19 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
                     actionIconContentColor = Color.White
                 ),
                 actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair da Feira")
+                    // BOTÃO: VOLTAR PARA A PROPRIEDADE DO PRODUTOR
+                    IconButton(onClick = onSwitchToProducer, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            Icons.Filled.Home,
+                            contentDescription = "Ir para a minha propriedade",
+                            tint = SolNordeste,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    // BOTÃO: SAIR
+                    IconButton(onClick = onLogout, modifier = Modifier.size(48.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair da Feira", modifier = Modifier.size(28.dp))
                     }
                 }
             )
@@ -90,26 +106,26 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
                     Text(
                         text = "Bom dia, comprador! ☀️",
                         color = SolNordeste,
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "O melhor do Sertão,\ndireto para si.",
                         color = Color.White,
-                        fontSize = 28.sp,
+                        fontSize = 30.sp,
                         fontWeight = FontWeight.Black,
-                        lineHeight = 32.sp,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
+                        lineHeight = 36.sp,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
                     )
 
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Ex: Ovelha Santa Inês, Queijo...", color = Color.Gray) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Pesquisar", tint = TerraBarro) },
+                        placeholder = { Text("Ex: Ovelha, Queijo...", color = Color.Gray, fontSize = 16.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Pesquisar", tint = TerraBarro, modifier = Modifier.size(28.dp)) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp),
+                            .height(60.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
@@ -124,7 +140,11 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
             }
 
             item(span = { GridItemSpan(2) }) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    // CORREÇÃO: Removido o caminho gigante. O Kotlin entende qual 'items' usar!
                     items(categorias) { categoria ->
                         FilterChip(
                             selected = categoriaSelecionada == categoria,
@@ -133,7 +153,8 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
                                 Text(
                                     categoria,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (categoriaSelecionada == categoria) TextoPrincipal else Color.Gray
+                                    fontSize = 15.sp,
+                                    color = if (categoriaSelecionada == categoria) TextoPrincipal else Color.DarkGray
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
@@ -141,8 +162,8 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
                                 containerColor = Color.White
                             ),
                             border = null,
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier.height(40.dp)
+                            shape = RoundedCornerShape(24.dp),
+                            modifier = Modifier.height(48.dp)
                         )
                     }
                 }
@@ -158,11 +179,12 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
                         modifier = Modifier.padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("🚚", fontSize = 40.sp)
+                        Text("🚚", fontSize = 48.sp)
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
-                            Text("Apoie o Produtor Local!", color = SolNordeste, fontWeight = FontWeight.Black, fontSize = 16.sp)
-                            Text("Portes grátis para entregas na região de Iguatu.", color = Color.White, fontSize = 12.sp, lineHeight = 16.sp)
+                            Text("Apoie o Produtor Local!", color = SolNordeste, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Portes grátis para entregas na região de Iguatu.", color = Color.White, fontSize = 14.sp, lineHeight = 18.sp)
                         }
                     }
                 }
@@ -172,21 +194,27 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
                 Text(
                     text = "Destaques da Região",
                     fontWeight = FontWeight.Black,
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     color = TextoPrincipal,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
                 )
             }
 
             if (anunciosDisponiveis.isEmpty()) {
                 item(span = { GridItemSpan(2) }) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("Nenhum produto encontrado.", color = Color.Gray)
+                        Text("Nenhum produto encontrado.", color = Color.Gray, fontSize = 16.sp)
                     }
                 }
             } else {
                 items(anunciosDisponiveis) { produto ->
-                    MarketplaceGridCard(produto = produto)
+                    MarketplaceGridCard(
+                        produto = produto,
+                        // NAVEGAÇÃO: Envia o ID do produto para a nova ecrã de detalhes
+                        onProductClick = { id ->
+                            navController.navigate("product_details/$id")
+                        }
+                    )
                 }
             }
         }
@@ -194,14 +222,15 @@ fun MarketplaceScreen(navController: NavController, onLogout: () -> Unit = {}) {
 }
 
 @Composable
-fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto) {
+fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto, onProductClick: (String) -> Unit) {
     val precoVenda = produto.custo * 1.5
     val isAnimal = produto is Animal
     val raca = if (produto is Animal) produto.raca else "Derivado"
     var isFavorite by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { },
+        // O cartão inteiro é clicável e abre os detalhes
+        modifier = Modifier.fillMaxWidth().clickable { onProductClick(produto.id) },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -214,51 +243,71 @@ fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto) {
                     .background(Brush.verticalGradient(colors = listOf(CinzaAreia, Color(0xFFE2DED4)))),
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (isAnimal) "🐑" else "🧀", fontSize = 64.sp)
+                Text(if (isAnimal) "🐑" else "🧀", fontSize = 72.sp)
+
                 IconButton(
                     onClick = { isFavorite = !isFavorite },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(32.dp).background(Color.White.copy(alpha = 0.7f), CircleShape)
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(48.dp)
+                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = "Favorito",
+                        contentDescription = "Favoritar produto",
                         tint = if (isFavorite) VermelhoBarro else Color.Gray,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = produto.nome.uppercase(), fontWeight = FontWeight.Black, fontSize = 14.sp, color = TextoPrincipal, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                        text = produto.nome.uppercase(),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        color = TextoPrincipal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Star, contentDescription = null, tint = SolNordeste, modifier = Modifier.size(12.dp))
-                        Text("4.9", fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 2.dp))
+                        Icon(Icons.Filled.Star, contentDescription = null, tint = SolNordeste, modifier = Modifier.size(16.dp))
+                        Text("4.9", fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 2.dp))
                     }
                 }
 
-                Text(text = raca, color = Color.Gray, fontSize = 11.sp, maxLines = 1)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(precoVenda), fontWeight = FontWeight.Black, fontSize = 16.sp, color = VerdeCaatinga)
-                Spacer(modifier = Modifier.height(12.dp))
+                Text(text = raca, color = Color.Gray, fontSize = 13.sp, maxLines = 1)
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(precoVenda),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                    color = VerdeCaatinga
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.LocationOn, contentDescription = null, tint = TerraBarro, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Fazenda Esperança", fontSize = 10.sp, color = Color.DarkGray, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Icon(Icons.Filled.LocationOn, contentDescription = null, tint = TerraBarro, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Fazenda Esperança", fontSize = 12.sp, color = Color.DarkGray, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Button(
-                    onClick = { },
-                    modifier = Modifier.fillMaxWidth().height(36.dp),
+                    // O botão também abre os detalhes
+                    onClick = { onProductClick(produto.id) },
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
                     contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = TerraBarro, contentColor = Color.White),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("VER DETALHES", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                    Text("VER DETALHES", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
                 }
             }
         }
