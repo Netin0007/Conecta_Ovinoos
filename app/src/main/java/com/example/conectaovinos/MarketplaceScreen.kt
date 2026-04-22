@@ -64,26 +64,20 @@ fun MarketplaceScreen(
                     actionIconContentColor = Color.White
                 ),
                 actions = {
-                    // BOTÃO: VOLTAR PARA A PROPRIEDADE DO PRODUTOR
-                    IconButton(onClick = onSwitchToProducer, modifier = Modifier.size(48.dp)) {
-                        Icon(
-                            Icons.Filled.Home,
-                            contentDescription = "Ir para a minha propriedade",
-                            tint = SolNordeste,
-                            modifier = Modifier.size(28.dp)
-                        )
+                    // BOTÕES MAIORES (56dp em vez de 48dp)
+                    IconButton(onClick = onSwitchToProducer, modifier = Modifier.size(56.dp)) {
+                        Icon(Icons.Filled.Home, contentDescription = "Ir para a minha propriedade", tint = SolNordeste, modifier = Modifier.size(32.dp))
                     }
-
-                    // BOTÃO: SAIR
-                    IconButton(onClick = onLogout, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair da Feira", modifier = Modifier.size(28.dp))
+                    IconButton(onClick = onLogout, modifier = Modifier.size(56.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair da Feira", modifier = Modifier.size(32.dp))
                     }
                 }
             )
         }
     ) { innerPadding ->
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            // MÁGICA DA RESPONSIVIDADE: Calcula colunas automaticamente com base na largura da tela!
+            columns = GridCells.Adaptive(minSize = 160.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
@@ -91,32 +85,19 @@ fun MarketplaceScreen(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item(span = { GridItemSpan(2) }) {
+            // Este card agora estica ocupando toda a largura, independente se é tablet ou celular
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            brush = Brush.verticalGradient(
-                                colors = listOf(TerraBarro, TerraBarro.copy(alpha = 0.9f))
-                            ),
+                            brush = Brush.verticalGradient(listOf(TerraBarro, TerraBarro.copy(alpha = 0.9f))),
                             shape = RoundedCornerShape(24.dp)
                         )
-                        .padding(20.dp)
+                        .padding(24.dp) // Aumentei o padding interno para telas grandes
                 ) {
-                    Text(
-                        text = "Bom dia, comprador! ☀️",
-                        color = SolNordeste,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "O melhor do Sertão,\ndireto para si.",
-                        color = Color.White,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Black,
-                        lineHeight = 36.sp,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
-                    )
+                    Text("Bom dia, comprador! ☀️", color = SolNordeste, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("O melhor do Sertão,\ndireto para si.", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, lineHeight = 36.sp, modifier = Modifier.padding(top = 4.dp, bottom = 24.dp))
 
                     OutlinedTextField(
                         value = searchQuery,
@@ -125,7 +106,7 @@ fun MarketplaceScreen(
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Pesquisar", tint = TerraBarro, modifier = Modifier.size(28.dp)) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(60.dp),
+                            .height(64.dp), // CAIXA DE PESQUISA MAIOR
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
@@ -139,81 +120,36 @@ fun MarketplaceScreen(
                 }
             }
 
-            item(span = { GridItemSpan(2) }) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 4.dp)
+                    contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
-                    // CORREÇÃO: Removido o caminho gigante. O Kotlin entende qual 'items' usar!
                     items(categorias) { categoria ->
                         FilterChip(
                             selected = categoriaSelecionada == categoria,
                             onClick = { categoriaSelecionada = categoria },
-                            label = {
-                                Text(
-                                    categoria,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = if (categoriaSelecionada == categoria) TextoPrincipal else Color.DarkGray
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = SolNordeste,
-                                containerColor = Color.White
-                            ),
+                            label = { Text(categoria, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = if (categoriaSelecionada == categoria) TextoPrincipal else Color.DarkGray) },
+                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = SolNordeste, containerColor = Color.White),
                             border = null,
                             shape = RoundedCornerShape(24.dp),
-                            modifier = Modifier.height(48.dp)
+                            modifier = Modifier.height(56.dp) // CHIPS MAIORES PARA CLIQUE FÁCIL
                         )
                     }
                 }
             }
 
-            item(span = { GridItemSpan(2) }) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = VerdeCaatinga),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("🚚", fontSize = 48.sp)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text("Apoie o Produtor Local!", color = SolNordeste, fontWeight = FontWeight.Black, fontSize = 18.sp)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text("Portes grátis para entregas na região de Iguatu.", color = Color.White, fontSize = 14.sp, lineHeight = 18.sp)
-                        }
-                    }
-                }
-            }
-
-            item(span = { GridItemSpan(2) }) {
-                Text(
-                    text = "Destaques da Região",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 20.sp,
-                    color = TextoPrincipal,
-                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
-                )
-            }
-
             if (anunciosDisponiveis.isEmpty()) {
-                item(span = { GridItemSpan(2) }) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("Nenhum produto encontrado.", color = Color.Gray, fontSize = 16.sp)
+                        Text("Nenhum produto encontrado.", color = Color.Gray, fontSize = 18.sp)
                     }
                 }
             } else {
                 items(anunciosDisponiveis) { produto ->
                     MarketplaceGridCard(
                         produto = produto,
-                        // NAVEGAÇÃO: Envia o ID do produto para a nova ecrã de detalhes
-                        onProductClick = { id ->
-                            navController.navigate("product_details/$id")
-                        }
+                        onProductClick = { id -> navController.navigate("product_details/$id") }
                     )
                 }
             }
@@ -229,7 +165,6 @@ fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto, onPro
     var isFavorite by remember { mutableStateOf(false) }
 
     Card(
-        // O cartão inteiro é clicável e abre os detalhes
         modifier = Modifier.fillMaxWidth().clickable { onProductClick(produto.id) },
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
@@ -239,7 +174,7 @@ fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto, onPro
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f)
+                    .aspectRatio(1.2f) // Ajusta a foto para não ficar esmagada em celulares finos
                     .background(Brush.verticalGradient(colors = listOf(CinzaAreia, Color(0xFFE2DED4)))),
                 contentAlignment = Alignment.Center
             ) {
@@ -247,67 +182,61 @@ fun MarketplaceGridCard(produto: com.example.conectaovinos.models.Produto, onPro
 
                 IconButton(
                     onClick = { isFavorite = !isFavorite },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .size(48.dp)
-                        .background(Color.White.copy(alpha = 0.8f), CircleShape)
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(56.dp).background(Color.White.copy(alpha = 0.8f), CircleShape) // BOTÃO DE FAVORITO MAIOR
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = "Favoritar produto",
                         tint = if (isFavorite) VermelhoBarro else Color.Gray,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
 
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) { // Mais espaço interno
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = produto.nome.uppercase(),
                         fontWeight = FontWeight.Black,
-                        fontSize = 16.sp,
+                        fontSize = 18.sp, // LETRA MAIOR
                         color = TextoPrincipal,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f) // Previne que o nome empurre as estrelas para fora da tela
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.Star, contentDescription = null, tint = SolNordeste, modifier = Modifier.size(16.dp))
-                        Text("4.9", fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 2.dp))
+                        Icon(Icons.Filled.Star, contentDescription = null, tint = SolNordeste, modifier = Modifier.size(18.dp))
+                        Text("4.9", fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 2.dp))
                     }
                 }
 
-                Text(text = raca, color = Color.Gray, fontSize = 13.sp, maxLines = 1)
+                Text(text = raca, color = Color.Gray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(precoVenda),
                     fontWeight = FontWeight.Black,
-                    fontSize = 18.sp,
+                    fontSize = 20.sp, // PREÇO BEM MAIOR
                     color = VerdeCaatinga
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.LocationOn, contentDescription = null, tint = TerraBarro, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Filled.LocationOn, contentDescription = null, tint = TerraBarro, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Fazenda Esperança", fontSize = 12.sp, color = Color.DarkGray, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("Iguatu, CE", fontSize = 14.sp, color = Color.DarkGray, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
-                    // O botão também abre os detalhes
                     onClick = { onProductClick(produto.id) },
-                    modifier = Modifier.fillMaxWidth().height(44.dp),
-                    contentPadding = PaddingValues(0.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp), // ACESSIBILIDADE: BOTÃO GIGANTE (passou de 44 para 56dp)
                     colors = ButtonDefaults.buttonColors(containerColor = TerraBarro, contentColor = Color.White),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("VER DETALHES", fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
+                    Text("VER DETALHES", fontWeight = FontWeight.Black, fontSize = 14.sp, letterSpacing = 1.sp)
                 }
             }
         }

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -30,7 +31,7 @@ import java.util.*
 fun InventoryScreen(
     navController: NavController,
     onLogout: () -> Unit = {},
-    onSwitchToConsumer: () -> Unit = {} // NOVA FUNÇÃO: Mudar para a Feira
+    onSwitchToConsumer: () -> Unit = {}
 ) {
     val valorTotalCusto = rebanhoGlobal.sumOf { it.custo }
 
@@ -38,61 +39,48 @@ fun InventoryScreen(
         containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = { Text("O MEU INVENTÁRIO", fontWeight = FontWeight.Black, fontSize = 18.sp) },
+                title = { Text("O MEU INVENTÁRIO", fontWeight = FontWeight.Black, fontSize = 20.sp) }, // FONTE MAIOR
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
                     titleContentColor = Color.White
                 ),
                 actions = {
-                    // BOTÃO: IR PARA A FEIRA LIVRE (Mudar de Chapéu)
-                    // ACESSIBILIDADE: Tamanho 48dp para toque fácil
-                    IconButton(onClick = onSwitchToConsumer, modifier = Modifier.size(48.dp)) {
-                        Icon(
-                            Icons.Filled.ShoppingCart,
-                            contentDescription = "Ir para a Feira Livre",
-                            tint = SolNordeste, // Cor de destaque
-                            modifier = Modifier.size(28.dp)
-                        )
+                    IconButton(onClick = onSwitchToConsumer, modifier = Modifier.size(56.dp)) {
+                        Icon(Icons.Filled.ShoppingCart, contentDescription = "Ir para a Feira Livre", tint = SolNordeste, modifier = Modifier.size(32.dp))
                     }
 
-                    // BOTÃO: SAIR DA CONTA
-                    IconButton(onClick = onLogout, modifier = Modifier.size(48.dp)) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Sair",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
+                    IconButton(onClick = onLogout, modifier = Modifier.size(56.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair", tint = Color.White, modifier = Modifier.size(32.dp))
                     }
                 }
             )
         },
         floatingActionButton = {
-            // ACESSIBILIDADE: Botão Novo maior e mais visível
+            // ACESSIBILIDADE: Botão Novo gigante
             FloatingActionButton(
                 onClick = { navController.navigate("add_product_form") },
                 containerColor = SolNordeste,
                 contentColor = TextoPrincipal,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.size(64.dp)
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.size(72.dp)
             ) {
-                Icon(Icons.Filled.Add, "Novo Registo", modifier = Modifier.size(36.dp))
+                Icon(Icons.Filled.Add, "Novo Registo", modifier = Modifier.size(40.dp))
             }
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
+        Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(TerraBarro)
-                    .padding(20.dp)
+                    .padding(24.dp) // Padding responsivo
             ) {
                 Column {
-                    Text("Investimento em Produção", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
+                    Text("Investimento em Produção", color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp)
                     Text(
                         text = formatCurrency(valorTotalCusto),
                         color = SolNordeste,
-                        fontSize = 36.sp,
+                        fontSize = 40.sp,
                         fontWeight = FontWeight.Black
                     )
                 }
@@ -100,13 +88,15 @@ fun InventoryScreen(
 
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
             ) {
                 items(rebanhoGlobal) { product ->
                     InventoryCard(product) {
                         if (product is Animal) navController.navigate("animal_details/${product.id}")
                     }
                 }
+                item { Spacer(modifier = Modifier.height(80.dp)) }
             }
         }
     }
@@ -117,34 +107,48 @@ fun InventoryScreen(
 fun InventoryCard(product: Produto, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp), // Cantos mais arredondados
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)).background(CinzaAreia),
+                modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(CinzaAreia),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = if (product is Animal) "🐑" else "🧀", fontSize = 28.sp)
+                Text(text = if (product is Animal) "🐑" else "🧀", fontSize = 36.sp)
             }
             Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
-                Text(product.nome.uppercase(), fontWeight = FontWeight.Black, color = TextoPrincipal, fontSize = 16.sp)
+                Text(
+                    text = product.nome.uppercase(),
+                    fontWeight = FontWeight.Black,
+                    color = TextoPrincipal,
+                    fontSize = 18.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Text(
                     text = if (product is Animal) "Raça: ${product.raca}" else "Derivado",
-                    fontSize = 13.sp,
-                    color = Color.Gray
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             Text(
                 text = formatCurrency(product.custo),
                 fontWeight = FontWeight.Black,
                 color = VerdeCaatinga,
-                fontSize = 18.sp
+                fontSize = 20.sp
             )
         }
     }

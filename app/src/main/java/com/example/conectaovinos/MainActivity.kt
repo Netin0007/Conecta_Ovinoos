@@ -79,32 +79,34 @@ fun AuthenticationScreen(navController: NavController) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp),
-            modifier = Modifier.padding(32.dp)
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp).fillMaxWidth() // Adaptável a todas as telas
         ) {
-            Text("CONECTA:OVINOS", color = SolNordeste, fontSize = 32.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-            Text("Escolha como deseja entrar:", color = Color.White, fontSize = 16.sp)
+            Text("CONECTA:OVINOS", color = SolNordeste, fontSize = 34.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            Text("Escolha como deseja entrar:", color = Color.White, fontSize = 18.sp)
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = {
                     navController.navigate(AppScreen.ProducerMain.route) { popUpTo(AppScreen.Authentication.route) { inclusive = true } }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = SolNordeste, contentColor = TextoPrincipal),
-                modifier = Modifier.fillMaxWidth().height(64.dp),
-                shape = RoundedCornerShape(12.dp)
+                modifier = Modifier.fillMaxWidth().height(72.dp), // BOTOES AINDA MAIORES PARA MÃO DO PRODUTOR
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text("SOU PRODUTOR RURAL", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                Text("SOU PRODUTOR RURAL", fontWeight = FontWeight.Black, fontSize = 18.sp)
             }
 
             OutlinedButton(
                 onClick = {
                     navController.navigate(AppScreen.ConsumerMain.route) { popUpTo(AppScreen.Authentication.route) { inclusive = true } }
                 },
-                border = androidx.compose.foundation.BorderStroke(2.dp, SolNordeste),
+                border = androidx.compose.foundation.BorderStroke(3.dp, SolNordeste),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = SolNordeste),
-                modifier = Modifier.fillMaxWidth().height(64.dp),
-                shape = RoundedCornerShape(12.dp)
+                modifier = Modifier.fillMaxWidth().height(72.dp), // BOTOES AINDA MAIORES
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text("QUERO COMPRAR (FEIRA)", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                Text("QUERO COMPRAR (FEIRA)", fontWeight = FontWeight.Black, fontSize = 18.sp)
             }
         }
     }
@@ -130,11 +132,15 @@ fun ProducerHomeTabs(navController: NavController, onLogout: () -> Unit, onSwitc
 
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = TerraBarro, contentColor = Color.White) {
+            NavigationBar(
+                containerColor = TerraBarro,
+                contentColor = Color.White,
+                modifier = Modifier.height(80.dp) // BARRA INFERIOR MAIS ROBUSTA
+            ) {
                 items.forEachIndexed { index, screen ->
                     NavigationBarItem(
-                        label = { Text(screen.title, color = if(pagerState.currentPage == index) SolNordeste else Color.White, fontSize = 10.sp) },
-                        icon = { Icon(painterResource(id = screen.icon), contentDescription = null) },
+                        label = { Text(screen.title, color = if(pagerState.currentPage == index) SolNordeste else Color.White, fontSize = 12.sp) }, // Fonte maiorzinha
+                        icon = { Icon(painterResource(id = screen.icon), contentDescription = null, modifier = Modifier.size(28.dp)) },
                         selected = pagerState.currentPage == index,
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = TerraBarro, selectedTextColor = SolNordeste,
@@ -166,8 +172,6 @@ fun ConsumerMainScreen(onLogout: () -> Unit, onSwitchToProducer: () -> Unit) {
     val navController = rememberNavController()
     NavHost(navController, startDestination = "consumer_home_tabs") {
         composable("consumer_home_tabs") { ConsumerHomeTabs(navController, onLogout, onSwitchToProducer) }
-
-        // NOVO: A rota que abre os detalhes do anúncio!
         composable("product_details/{productId}") { backStackEntry ->
             ProductDetailsScreen(navController, backStackEntry.arguments?.getString("productId"))
         }
@@ -181,17 +185,21 @@ fun ConsumerHomeTabs(navController: NavController, onLogout: () -> Unit, onSwitc
 
     Scaffold(
         bottomBar = {
-            NavigationBar(containerColor = TerraBarro, contentColor = Color.White) {
+            NavigationBar(
+                containerColor = TerraBarro,
+                contentColor = Color.White,
+                modifier = Modifier.height(80.dp) // BARRA INFERIOR MAIS ROBUSTA
+            ) {
                 NavigationBarItem(
-                    label = { Text("Feira", color = if(pagerState.currentPage == 0) SolNordeste else Color.White) },
-                    icon = { Text("🛒", fontSize = 24.sp) },
+                    label = { Text("Feira", color = if(pagerState.currentPage == 0) SolNordeste else Color.White, fontSize = 14.sp) },
+                    icon = { Text("🛒", fontSize = 28.sp) },
                     selected = pagerState.currentPage == 0,
                     colors = NavigationBarItemDefaults.colors(selectedIconColor = TerraBarro, indicatorColor = SolNordeste),
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } }
                 )
                 NavigationBarItem(
-                    label = { Text("Favoritos", color = if(pagerState.currentPage == 1) SolNordeste else Color.White) },
-                    icon = { Text("❤️", fontSize = 24.sp) },
+                    label = { Text("Favoritos", color = if(pagerState.currentPage == 1) SolNordeste else Color.White, fontSize = 14.sp) },
+                    icon = { Text("❤️", fontSize = 28.sp) },
                     selected = pagerState.currentPage == 1,
                     colors = NavigationBarItemDefaults.colors(selectedIconColor = TerraBarro, indicatorColor = SolNordeste),
                     onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } }
@@ -214,11 +222,11 @@ fun ConsumerHomeTabs(navController: NavController, onLogout: () -> Unit, onSwitc
 @Composable
 fun FavoritosPlaceholderScreen() {
     Box(modifier = Modifier.fillMaxSize().background(CinzaAreia), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("❤️", fontSize = 64.sp)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+            Text("❤️", fontSize = 80.sp)
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Os seus produtos favoritos", fontWeight = FontWeight.Black, fontSize = 18.sp, color = TextoPrincipal)
-            Text("aparecerão aqui em breve.", color = Color.Gray)
+            Text("Os seus produtos favoritos", fontWeight = FontWeight.Black, fontSize = 20.sp, color = TextoPrincipal, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Text("aparecerão aqui em breve.", color = Color.Gray, fontSize = 16.sp)
         }
     }
 }
