@@ -1,14 +1,12 @@
-package com.example.conectaovinos
+package com.example.conectaovinos.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,30 +17,43 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.models.Animal
 import com.example.conectaovinos.models.ProdutoDerivado
+import com.example.conectaovinos.rebanhoGlobal
+import com.example.conectaovinos.ui.components.FormSectionTitle
+import com.example.conectaovinos.ui.components.SelectableChip
+import com.example.conectaovinos.ui.components.SertaoTextField
+import com.example.conectaovinos.ui.components.TypeSelectionCard
+import com.example.conectaovinos.ui.theme.*
 import java.util.UUID
 
+// Listas auxiliares mantidas no topo para fácil manutenção
 val racasComuns = listOf("Santa Inês", "Dorper", "Morada Nova", "Somalis", "SRD", "Boer")
 val unidadesComuns = listOf("Kg", "Litro", "Garrafa", "Peça", "Duzia")
 
 enum class ProductType { Animal, Derivado }
 
+/**
+ * Tela de Cadastro de Produtos ou Animais (Inventário).
+ * Permite ao produtor registrar novos itens no seu rebanho ou estoque.
+ *
+ * Utiliza componentes reutilizáveis de formulário (`FormComponents`) para manter a
+ * consistência visual (UX Rural) e deixar o código limpo.
+ *
+ * @param navController Controlador de navegação usado para retornar à tela anterior após salvar.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(navController: NavController) {
+    // --- ESTADOS DO FORMULÁRIO ---
     var selectedType by remember { mutableStateOf(ProductType.Animal) }
     var nome by remember { mutableStateOf("") }
     var custo by remember { mutableStateOf("") }
-
     var racaSelecionada by remember { mutableStateOf("") }
     var unidadeSelecionada by remember { mutableStateOf("") }
     var dataNascimento by remember { mutableStateOf("") }
@@ -71,6 +82,7 @@ fun AddProductScreen(navController: NavController) {
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
+            // SELEÇÃO DO TIPO (Animal ou Derivado)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -81,19 +93,20 @@ fun AddProductScreen(navController: NavController) {
                     title = "ANIMAL",
                     icon = "🐑",
                     isSelected = selectedType == ProductType.Animal,
-                    modifier = Modifier.weight(1f), // Metade da tela
+                    modifier = Modifier.weight(1f),
                     onClick = { selectedType = ProductType.Animal }
                 )
                 TypeSelectionCard(
                     title = "PRODUTO",
                     icon = "🧀",
                     isSelected = selectedType == ProductType.Derivado,
-                    modifier = Modifier.weight(1f), // Metade da tela
+                    modifier = Modifier.weight(1f),
                     onClick = { selectedType = ProductType.Derivado }
                 )
             }
 
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                // ÁREA DE UPLOAD DE FOTO (Simulada)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -112,6 +125,7 @@ fun AddProductScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // DADOS BÁSICOS
                 FormSectionTitle("INFORMAÇÕES BÁSICAS")
                 SertaoTextField(
                     value = nome,
@@ -131,10 +145,13 @@ fun AddProductScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // DADOS ESPECÍFICOS BASEADOS NO TIPO SELECIONADO
                 if (selectedType == ProductType.Animal) {
                     FormSectionTitle("RAÇA (Selecione)")
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(racasComuns) { raca ->
+                        // SOLUÇÃO À PROVA DE ERROS: Usando 'count' e 'index'
+                        items(count = racasComuns.size) { index ->
+                            val raca = racasComuns[index]
                             SelectableChip(raca, raca == racaSelecionada) { racaSelecionada = raca }
                         }
                     }
@@ -149,7 +166,9 @@ fun AddProductScreen(navController: NavController) {
                 } else {
                     FormSectionTitle("UNIDADE DE VENDA")
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(unidadesComuns) { unidade ->
+                        // SOLUÇÃO À PROVA DE ERROS: Usando 'count' e 'index'
+                        items(count = unidadesComuns.size) { index ->
+                            val unidade = unidadesComuns[index]
                             SelectableChip(unidade, unidade == unidadeSelecionada) { unidadeSelecionada = unidade }
                         }
                     }
@@ -158,16 +177,28 @@ fun AddProductScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // BOTÃO DE SALVAR
             Button(
                 onClick = {
                     val custoDouble = custo.toDoubleOrNull() ?: 0.0
                     val novoId = UUID.randomUUID().toString()
 
                     if (selectedType == ProductType.Animal) {
-                        val novoAnimal = Animal(id = novoId, nome = nome, raca = racaSelecionada.ifEmpty { "Sem Raça" }, dataNascimento = dataNascimento, custo = custoDouble)
+                        val novoAnimal = Animal(
+                            id = novoId,
+                            nome = nome,
+                            raca = racaSelecionada.ifEmpty { "Sem Raça" },
+                            dataNascimento = dataNascimento,
+                            custo = custoDouble
+                        )
                         rebanhoGlobal.add(novoAnimal)
                     } else {
-                        val novoDerivado = ProdutoDerivado(id = novoId, nome = nome, unidadeDeMedida = unidadeSelecionada.ifEmpty { "Unidade" }, custo = custoDouble)
+                        val novoDerivado = ProdutoDerivado(
+                            id = novoId,
+                            nome = nome,
+                            unidadeDeMedida = unidadeSelecionada.ifEmpty { "Unidade" },
+                            custo = custoDouble
+                        )
                         rebanhoGlobal.add(novoDerivado)
                     }
 
@@ -181,81 +212,8 @@ fun AddProductScreen(navController: NavController) {
             ) {
                 Text("SALVAR NO INVENTÁRIO", fontWeight = FontWeight.Black, fontSize = 16.sp)
             }
+
             Spacer(modifier = Modifier.height(20.dp))
-        }
-    }
-}
-
-@Composable
-fun TypeSelectionCard(title: String, icon: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Card(
-        modifier = modifier
-            .height(80.dp)
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) TerraBarro else Color.White
-        ),
-        elevation = CardDefaults.cardElevation(if (isSelected) 8.dp else 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(text = icon, fontSize = 28.sp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                fontWeight = FontWeight.Black,
-                color = if (isSelected) Color.White else TerraBarro
-            )
-        }
-    }
-}
-
-@Composable
-fun SelectableChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) VerdeCaatinga else Color.White,
-        border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray) else null,
-        modifier = Modifier.height(40.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(text = text, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, color = if (isSelected) Color.White else TextoPrincipal)
-        }
-    }
-}
-
-@Composable
-fun FormSectionTitle(text: String) {
-    Text(text = text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
-}
-
-@Composable
-fun SertaoTextField(value: String, onValueChange: (String) -> Unit, label: String, keyboardType: KeyboardType = KeyboardType.Text, icon: ImageVector? = null, placeholder: String? = null, helperText: String? = null) {
-    Column {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label) },
-            placeholder = if (placeholder != null) { { Text(placeholder) } } else null,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            leadingIcon = if (icon != null) { { Icon(icon, null, tint = TerraBarro) } } else null,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, keyboardType = keyboardType),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = TerraBarro,
-                focusedLabelColor = TerraBarro,
-                cursorColor = TerraBarro,
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White
-            ),
-            shape = RoundedCornerShape(12.dp)
-        )
-        if (helperText != null) {
-            Text(text = helperText, style = MaterialTheme.typography.bodySmall, color = VerdeCaatinga, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
         }
     }
 }

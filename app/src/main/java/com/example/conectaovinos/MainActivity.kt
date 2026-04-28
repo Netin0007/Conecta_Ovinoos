@@ -20,6 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.*
+import com.example.conectaovinos.ui.screens.AddProductScreen
+import com.example.conectaovinos.ui.screens.AnimalDetailsScreen
+import com.example.conectaovinos.ui.screens.CommunityScreen
+import com.example.conectaovinos.ui.screens.CreateAdScreen
+import com.example.conectaovinos.ui.screens.DashboardScreen
+import com.example.conectaovinos.ui.screens.InventoryScreen
+import com.example.conectaovinos.ui.screens.MarketplaceScreen
+import com.example.conectaovinos.ui.screens.MyAdsScreen
+import com.example.conectaovinos.ui.screens.ProductDetailsScreen
 import com.example.conectaovinos.ui.theme.*
 import kotlinx.coroutines.launch
 

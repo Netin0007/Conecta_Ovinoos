@@ -1,4 +1,4 @@
-package com.example.conectaovinos
+package com.example.conectaovinos.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.conectaovinos.models.Animal
 import com.example.conectaovinos.models.Produto
+import com.example.conectaovinos.rebanhoGlobal
 import com.example.conectaovinos.ui.theme.*
 import java.text.NumberFormat
 import java.util.*

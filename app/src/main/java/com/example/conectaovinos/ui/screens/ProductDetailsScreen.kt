@@ -1,4 +1,4 @@
-package com.example.conectaovinos
+package com.example.conectaovinos.ui.screens
 
 import android.content.Context
 import android.content.Intent
@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.rebanhoGlobal
 import com.example.conectaovinos.ui.theme.*
 import java.text.NumberFormat
 import java.util.*
