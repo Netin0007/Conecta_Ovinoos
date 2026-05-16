@@ -17,40 +17,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.Animal
-import com.example.conectaovinos.models.ProdutoDerivado
-import com.example.conectaovinos.rebanhoGlobal
+import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.ui.components.FormSectionTitle
 import com.example.conectaovinos.ui.components.SelectableChip
 import com.example.conectaovinos.ui.components.SertaoTextField
 import com.example.conectaovinos.ui.components.TypeSelectionCard
 import com.example.conectaovinos.ui.theme.*
-import java.util.UUID
+import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 
-// Listas auxiliares mantidas no topo para fácil manutenção
 val racasComuns = listOf("Santa Inês", "Dorper", "Morada Nova", "Somalis", "SRD", "Boer")
 val unidadesComuns = listOf("Kg", "Litro", "Garrafa", "Peça", "Duzia")
 
 enum class ProductType { Animal, Derivado }
 
-/**
- * Tela de Cadastro de Produtos ou Animais (Inventário).
- * Permite ao produtor registrar novos itens no seu rebanho ou estoque.
- *
- * Utiliza componentes reutilizáveis de formulário (`FormComponents`) para manter a
- * consistência visual (UX Rural) e deixar o código limpo.
- *
- * @param navController Controlador de navegação usado para retornar à tela anterior após salvar.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(navController: NavController) {
-    // --- ESTADOS DO FORMULÁRIO ---
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val viewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModel.Factory(app.rebanhoRepository)
+    )
+
     var selectedType by remember { mutableStateOf(ProductType.Animal) }
     var nome by remember { mutableStateOf("") }
     var custo by remember { mutableStateOf("") }
@@ -82,7 +76,6 @@ fun AddProductScreen(navController: NavController) {
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // SELEÇÃO DO TIPO (Animal ou Derivado)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -106,14 +99,13 @@ fun AddProductScreen(navController: NavController) {
             }
 
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                // ÁREA DE UPLOAD DE FOTO (Simulada)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.White)
-                        .border(2.dp, if(nome.isEmpty()) Color.LightGray else VerdeCaatinga, RoundedCornerShape(12.dp))
+                        .border(2.dp, if (nome.isEmpty()) Color.LightGray else VerdeCaatinga, RoundedCornerShape(12.dp))
                         .clickable { },
                     contentAlignment = Alignment.Center
                 ) {
@@ -125,7 +117,6 @@ fun AddProductScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // DADOS BÁSICOS
                 FormSectionTitle("INFORMAÇÕES BÁSICAS")
                 SertaoTextField(
                     value = nome,
@@ -145,11 +136,9 @@ fun AddProductScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // DADOS ESPECÍFICOS BASEADOS NO TIPO SELECIONADO
                 if (selectedType == ProductType.Animal) {
                     FormSectionTitle("RAÇA (Selecione)")
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // SOLUÇÃO À PROVA DE ERROS: Usando 'count' e 'index'
                         items(count = racasComuns.size) { index ->
                             val raca = racasComuns[index]
                             SelectableChip(raca, raca == racaSelecionada) { racaSelecionada = raca }
@@ -166,7 +155,6 @@ fun AddProductScreen(navController: NavController) {
                 } else {
                     FormSectionTitle("UNIDADE DE VENDA")
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // SOLUÇÃO À PROVA DE ERROS: Usando 'count' e 'index'
                         items(count = unidadesComuns.size) { index ->
                             val unidade = unidadesComuns[index]
                             SelectableChip(unidade, unidade == unidadeSelecionada) { unidadeSelecionada = unidade }
@@ -177,34 +165,20 @@ fun AddProductScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // BOTÃO DE SALVAR
             Button(
                 onClick = {
                     val custoDouble = custo.toDoubleOrNull() ?: 0.0
-                    val novoId = UUID.randomUUID().toString()
-
                     if (selectedType == ProductType.Animal) {
-                        val novoAnimal = Animal(
-                            id = novoId,
-                            nome = nome,
-                            raca = racaSelecionada.ifEmpty { "Sem Raça" },
-                            dataNascimento = dataNascimento,
-                            custo = custoDouble
-                        )
-                        rebanhoGlobal.add(novoAnimal)
+                        viewModel.addAnimal(nome, racaSelecionada, dataNascimento, custoDouble)
                     } else {
-                        val novoDerivado = ProdutoDerivado(
-                            id = novoId,
-                            nome = nome,
-                            unidadeDeMedida = unidadeSelecionada.ifEmpty { "Unidade" },
-                            custo = custoDouble
-                        )
-                        rebanhoGlobal.add(novoDerivado)
+                        viewModel.addProdutoDerivado(nome, unidadeSelecionada, custoDouble)
                     }
-
                     navController.navigateUp()
                 },
-                modifier = Modifier.fillMaxWidth().padding(20.dp).height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+                    .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SolNordeste, contentColor = TextoPrincipal),
                 elevation = ButtonDefaults.buttonElevation(6.dp),

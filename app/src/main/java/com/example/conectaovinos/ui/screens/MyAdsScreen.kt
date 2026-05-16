@@ -1,6 +1,7 @@
 package com.example.conectaovinos.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,25 +9,42 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.BottomNavScreen
+import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.Animal
-import com.example.conectaovinos.rebanhoGlobal
+import com.example.conectaovinos.models.Anuncio
 import com.example.conectaovinos.ui.theme.*
+import com.example.conectaovinos.ui.viewmodels.AnuncioViewModel
+import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 import java.text.NumberFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAdsScreen(navController: NavController) {
-    val activeAds = rebanhoGlobal.filterIsInstance<Animal>().take(2)
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val anuncioViewModel: AnuncioViewModel = viewModel(
+        factory = AnuncioViewModel.Factory(app.anuncioRepository)
+    )
+    val inventoryViewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModel.Factory(app.rebanhoRepository)
+    )
+
+    val todosAnuncios by anuncioViewModel.todosAnuncios.collectAsState()
+    val todosProdutos by inventoryViewModel.produtos.collectAsState()
+    val animaisNoInventario = todosProdutos.filterIsInstance<Animal>()
+
+    // Controla o bottom sheet de seleção de animal
+    var mostrarPicker by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = CinzaAreia,
@@ -41,24 +59,164 @@ fun MyAdsScreen(navController: NavController) {
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { navController.navigate(BottomNavScreen.Inventory.route) },
+                onClick = { mostrarPicker = true },
                 containerColor = SolNordeste,
                 contentColor = TextoPrincipal,
-                icon = { Icon(Icons.Default.Add, contentDescription = "Novo") },
-                text = { Text("Vender Artigo", fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Anunciar Animal", fontWeight = FontWeight.Bold) },
                 shape = RoundedCornerShape(12.dp)
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding)
-        ) {
+        if (todosAnuncios.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    Text("🐑", fontSize = 64.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Nenhum anúncio ainda",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
+                        color = TextoPrincipal
+                    )
+                    Text(
+                        "Toque em \"Anunciar Animal\" para colocar um animal à venda na feira.",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        } else {
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(innerPadding)
             ) {
-                items(activeAds) { animal ->
-                    AdItemCard(animal = animal)
+                items(todosAnuncios, key = { it.id }) { anuncio ->
+                    AnuncioCard(
+                        anuncio = anuncio,
+                        onPausar = { anuncioViewModel.pausarAnuncio(anuncio.id) },
+                        onReativar = { anuncioViewModel.reativarAnuncio(anuncio.id) },
+                        onDeletar = { anuncioViewModel.deletarAnuncio(anuncio.id) }
+                    )
+                }
+                item { Spacer(modifier = Modifier.height(80.dp)) }
+            }
+        }
+    }
+
+    // Bottom Sheet — picker de animais do inventário
+    if (mostrarPicker) {
+        AnimalPickerSheet(
+            animais = animaisNoInventario,
+            anunciosAtivos = todosAnuncios.filter { it.ativo },
+            onAnimalSelecionado = { animal ->
+                mostrarPicker = false
+                navController.navigate("create_ad_form/${animal.id}")
+            },
+            onDismiss = { mostrarPicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AnimalPickerSheet(
+    animais: List<Animal>,
+    anunciosAtivos: List<Anuncio>,
+    onAnimalSelecionado: (Animal) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val idsJaAnunciados = anunciosAtivos.map { it.animalId }.toSet()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color.White
+    ) {
+        Column(modifier = Modifier.padding(bottom = 32.dp)) {
+            Text(
+                "Escolha um animal para anunciar",
+                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                color = TextoPrincipal,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+            )
+
+            if (animais.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Seu inventário está vazio. Cadastre um animal primeiro.",
+                        color = Color.Gray,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn {
+                    items(animais, key = { it.id }) { animal ->
+                        val jaAnunciado = animal.id in idsJaAnunciados
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !jaAnunciado) {
+                                    onAnimalSelecionado(animal)
+                                }
+                                .padding(horizontal = 20.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(CinzaAreia, RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("🐑", fontSize = 24.sp)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    animal.nome.uppercase(),
+                                    fontWeight = FontWeight.Black,
+                                    color = if (jaAnunciado) Color.Gray else TextoPrincipal,
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    animal.raca,
+                                    color = Color.Gray,
+                                    fontSize = 13.sp
+                                )
+                            }
+                            if (jaAnunciado) {
+                                Surface(
+                                    color = VerdeCaatinga.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        "JÁ ANUNCIADO",
+                                        color = VerdeCaatinga,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                        HorizontalDivider(color = CinzaAreia)
+                    }
                 }
             }
         }
@@ -66,9 +224,12 @@ fun MyAdsScreen(navController: NavController) {
 }
 
 @Composable
-fun AdItemCard(animal: Animal) {
-    val precoSimulado = animal.custo * 1.5
-
+fun AnuncioCard(
+    anuncio: Anuncio,
+    onPausar: () -> Unit,
+    onReativar: () -> Unit,
+    onDeletar: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -76,19 +237,27 @@ fun AdItemCard(animal: Animal) {
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column {
+            // Cabeçalho com nome e badge de status
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFEFEBE1))
+                    .background(if (anuncio.ativo) Color(0xFFEFEBE1) else Color(0xFFF5F5F5))
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(animal.nome.uppercase(), fontWeight = FontWeight.Black, color = TextoPrincipal)
-                Surface(color = VerdeCaatinga, shape = RoundedCornerShape(8.dp)) {
+                Text(
+                    anuncio.nomeAnimal.uppercase(),
+                    fontWeight = FontWeight.Black,
+                    color = if (anuncio.ativo) TextoPrincipal else Color.Gray
+                )
+                Surface(
+                    color = if (anuncio.ativo) VerdeCaatinga else Color.Gray.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
                     Text(
-                        "ATIVO",
-                        color = Color.White,
+                        if (anuncio.ativo) "ATIVO" else "PAUSADO",
+                        color = if (anuncio.ativo) Color.White else Color.Gray,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -96,30 +265,76 @@ fun AdItemCard(animal: Animal) {
                 }
             }
 
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Corpo com preço e ações
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
-                    modifier = Modifier.size(50.dp).background(CinzaAreia, RoundedCornerShape(8.dp)),
+                    modifier = Modifier
+                        .size(50.dp)
+                        .background(CinzaAreia, RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("🐑", fontSize = 24.sp)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Preço no Mercado", fontSize = 12.sp, color = Color.Gray)
+                    Text(anuncio.racaAnimal, fontSize = 12.sp, color = Color.Gray)
                     Text(
-                        NumberFormat.getCurrencyInstance(Locale("pt", "PT")).format(precoSimulado),
+                        NumberFormat.getCurrencyInstance(Locale("pt", "BR"))
+                            .format(anuncio.precoVenda),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         color = SolNordeste
                     )
+                    Text(
+                        "Custo: ${NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(anuncio.custoAnimal)}",
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            // Botões de ação
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (anuncio.ativo) {
+                    OutlinedButton(
+                        onClick = onPausar,
+                        modifier = Modifier.weight(1f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, TerraBarro),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TerraBarro),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("PAUSAR", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                } else {
+                    Button(
+                        onClick = onReativar,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = VerdeCaatinga,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("REATIVAR", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
                 }
                 OutlinedButton(
-                    onClick = { /* Lógica para editar a implementar no futuro */ },
-                    border = androidx.compose.foundation.BorderStroke(1.dp, TerraBarro),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TerraBarro),
+                    onClick = onDeletar,
+                    modifier = Modifier.weight(1f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, VermelhoBarro),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = VermelhoBarro),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("EDITAR", fontWeight = FontWeight.Bold)
+                    Text("EXCLUIR", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
         }

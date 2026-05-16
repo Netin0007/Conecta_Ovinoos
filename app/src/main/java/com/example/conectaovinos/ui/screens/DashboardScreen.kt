@@ -8,40 +8,41 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.rebanhoGlobal
+import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.ui.theme.*
+import com.example.conectaovinos.ui.viewmodels.DashboardViewModel
 import java.text.NumberFormat
 import java.util.*
 
-/**
- * Tela de Dashboard Financeiro (Resumo do Bolso).
- * Focada em altíssima acessibilidade para produtores com baixa escolaridade.
- * Utiliza cores fortes (Verde/Vermelho) e símbolos universais (Setas/Emojis)
- * para que o entendimento do lucro e do custo seja imediato, mesmo sem leitura.
- *
- * @param navController Controlador de navegação.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(navController: NavController) {
-    // Lógica Financeira Básica
-    val totalCusto = rebanhoGlobal.sumOf { it.custo }
-    val totalVendasPotencial = totalCusto * 1.6
-    val lucroEstimado = totalVendasPotencial - totalCusto
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val viewModel: DashboardViewModel = viewModel(
+        factory = DashboardViewModel.Factory(app.transacaoRepository)
+    )
+
+    val transacoes by viewModel.transacoes.collectAsState()
+    val totalReceitas = viewModel.getTotalReceitas(transacoes)
+    val totalDespesas = viewModel.getTotalDespesas(transacoes)
+    val lucroEstimado = viewModel.getLucroLiquido(transacoes)
 
     Scaffold(
         containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                // Linguagem simples e direta
                 title = { Text("MEU DINHEIRO", fontWeight = FontWeight.Black) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
@@ -58,22 +59,18 @@ fun DashboardScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // CARTÃO PRINCIPAL: LUCRO (O que sobra no bolso)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = VerdeCaatinga),
-                shape = RoundedCornerShape(16.dp), // Bordas mais arredondadas e amigáveis
+                shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(24.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Ícone gigante para associação imediata
                     Text("💰", fontSize = 48.sp)
-
                     Spacer(modifier = Modifier.width(16.dp))
-
                     Column {
                         Text(
                             text = "LUCRO (DINHEIRO LIVRE)",
@@ -91,30 +88,23 @@ fun DashboardScreen(navController: NavController) {
                 }
             }
 
-            // LINHA DE CARTÕES MENORES (Gastos e Vendas)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Cartão de Custo: Usa ícone de queda e cor de alerta (TerraBarro/Avermelhado)
                 DashboardSmallCard(
                     label = "GASTOS (CUSTO)",
-                    value = totalCusto,
+                    value = totalDespesas,
                     icon = "📉",
                     accentColor = TerraBarro,
                     modifier = Modifier.weight(1f)
                 )
-
-                // Cartão de Venda: Usa ícone de subida e cor positiva
                 DashboardSmallCard(
                     label = "VENDAS (ESPERADO)",
-                    value = totalVendasPotencial,
+                    value = totalReceitas,
                     icon = "📈",
                     accentColor = VerdeCaatinga,
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // DICA VISUAL
             Card(
                 colors = CardDefaults.cardColors(containerColor = SolNordeste),
                 shape = RoundedCornerShape(16.dp),
@@ -147,18 +137,14 @@ fun DashboardScreen(navController: NavController) {
     }
 }
 
-/**
- * Componente interno: Cartão pequeno para exibir métricas secundárias.
- * Baseia-se em ícones grandes e cores fortes para ajudar na leitura.
- *
- * @param label Texto descritivo (ex: "GASTOS").
- * @param value Valor financeiro a ser formatado.
- * @param icon Emoji ou símbolo que representa a métrica.
- * @param accentColor Cor de destaque para o valor e para o fundo do ícone.
- * @param modifier Modificador de layout.
- */
 @Composable
-private fun DashboardSmallCard(label: String, value: Double, icon: String, accentColor: Color, modifier: Modifier) {
+private fun DashboardSmallCard(
+    label: String,
+    value: Double,
+    icon: String,
+    accentColor: Color,
+    modifier: Modifier
+) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -179,9 +165,7 @@ private fun DashboardSmallCard(label: String, value: Double, icon: String, accen
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(label, fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Gray)
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
             Text(
                 text = formatCurrency(value),
                 fontSize = 20.sp,
@@ -192,9 +176,6 @@ private fun DashboardSmallCard(label: String, value: Double, icon: String, accen
     }
 }
 
-/**
- * Função utilitária para formatar valores.
- */
 private fun formatCurrency(value: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
 }

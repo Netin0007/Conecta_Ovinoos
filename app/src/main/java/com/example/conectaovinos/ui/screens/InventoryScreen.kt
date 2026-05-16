@@ -11,19 +11,24 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.Animal
 import com.example.conectaovinos.models.Produto
-import com.example.conectaovinos.rebanhoGlobal
 import com.example.conectaovinos.ui.theme.*
+import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 import java.text.NumberFormat
 import java.util.*
 
@@ -34,13 +39,19 @@ fun InventoryScreen(
     onLogout: () -> Unit = {},
     onSwitchToConsumer: () -> Unit = {}
 ) {
-    val valorTotalCusto = rebanhoGlobal.sumOf { it.custo }
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val viewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModel.Factory(app.rebanhoRepository)
+    )
+
+    val produtos by viewModel.produtos.collectAsState()
+    val valorTotalCusto = produtos.sumOf { it.custo }
 
     Scaffold(
         containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = { Text("O MEU INVENTÁRIO", fontWeight = FontWeight.Black, fontSize = 20.sp) }, // FONTE MAIOR
+                title = { Text("O MEU INVENTÁRIO", fontWeight = FontWeight.Black, fontSize = 20.sp) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
                     titleContentColor = Color.White
@@ -49,7 +60,6 @@ fun InventoryScreen(
                     IconButton(onClick = onSwitchToConsumer, modifier = Modifier.size(56.dp)) {
                         Icon(Icons.Filled.ShoppingCart, contentDescription = "Ir para a Feira Livre", tint = SolNordeste, modifier = Modifier.size(32.dp))
                     }
-
                     IconButton(onClick = onLogout, modifier = Modifier.size(56.dp)) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair", tint = Color.White, modifier = Modifier.size(32.dp))
                     }
@@ -57,7 +67,6 @@ fun InventoryScreen(
             )
         },
         floatingActionButton = {
-            // ACESSIBILIDADE: Botão Novo gigante
             FloatingActionButton(
                 onClick = { navController.navigate("add_product_form") },
                 containerColor = SolNordeste,
@@ -74,7 +83,7 @@ fun InventoryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(TerraBarro)
-                    .padding(24.dp) // Padding responsivo
+                    .padding(24.dp)
             ) {
                 Column {
                     Text("Investimento em Produção", color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp)
@@ -92,7 +101,7 @@ fun InventoryScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(rebanhoGlobal) { product ->
+                items(produtos, key = { it.id }) { product ->
                     InventoryCard(product) {
                         if (product is Animal) navController.navigate("animal_details/${product.id}")
                     }
@@ -114,17 +123,21 @@ fun InventoryCard(product: Produto, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)).background(CinzaAreia),
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CinzaAreia),
                 contentAlignment = Alignment.Center
             ) {
                 Text(text = if (product is Animal) "🐑" else "🧀", fontSize = 36.sp)
             }
             Spacer(modifier = Modifier.width(16.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = product.nome.uppercase(),
@@ -142,9 +155,7 @@ fun InventoryCard(product: Produto, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
-
             Spacer(modifier = Modifier.width(8.dp))
-
             Text(
                 text = formatCurrency(product.custo),
                 fontWeight = FontWeight.Black,
