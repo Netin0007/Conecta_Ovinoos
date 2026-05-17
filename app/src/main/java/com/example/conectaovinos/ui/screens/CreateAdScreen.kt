@@ -1,36 +1,35 @@
 package com.example.conectaovinos.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.conectaovinos.BottomNavScreen
-import com.example.conectaovinos.models.Animal
 import com.example.conectaovinos.rebanhoGlobal
+import com.example.conectaovinos.ui.components.FormSectionTitle
+import com.example.conectaovinos.ui.components.SertaoTextField
 import com.example.conectaovinos.ui.theme.*
-import java.text.NumberFormat
-import java.util.*
 
+/**
+ * Tela de Criação de Anúncio para a Feira Livre (Marketplace).
+ * Aplica os conceitos de formulário limpo e Call-to-Action (botão) de alta conversão.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateAdScreen(navController: NavController, animalId: String?) {
-    val animal = rebanhoGlobal.find { it.id == animalId } as? Animal
-
+fun CreateAdScreen(navController: NavController) {
+    // Estados do formulário
     var precoVenda by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
 
@@ -38,7 +37,7 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
         containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = { Text("CRIAR ANÚNCIO", fontWeight = FontWeight.Black) },
+                title = { Text("NOVO ANÚNCIO", fontWeight = FontWeight.Black) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
                     titleContentColor = Color.White,
@@ -52,105 +51,83 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
             )
         }
     ) { innerPadding ->
-        if (animal == null) {
-            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("Animal não encontrado.", color = Color.Gray)
-            }
-            return@Scaffold
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(20.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(60.dp).background(CinzaAreia, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                        Text("🐑", fontSize = 32.sp)
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text(animal.nome.uppercase(), fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextoPrincipal)
-                        Text("Raça: ${animal.raca}", color = Color.Gray, fontSize = 12.sp)
-                        Text(
-                            "Custo: ${NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(animal.custo)}",
-                            color = VermelhoBarro,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
+
+            // --- PROTEÇÃO CONTRA ERROS (UX PREVENTIVA) ---
+            // Se ele tentar anunciar sem ter nada no estoque, avisamos com carinho.
+            if (rebanhoGlobal.isEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("📦", fontSize = 48.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Seu estoque está vazio.", color = TerraBarro, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Vá no Estoque e adicione um lote primeiro para poder anunciar.", fontSize = 14.sp, color = Color.Gray, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     }
                 }
-            }
+            } else {
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("PREÇO DE VENDA", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 12.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+                // --- FORMULÁRIO DE ANÚNCIO ---
+                FormSectionTitle("1. DETALHES DA VENDA")
 
-            // Campo de Preço
-            OutlinedTextField(
-                value = precoVenda,
-                onValueChange = { precoVenda = it },
-                placeholder = { Text("Ex: 500.00") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = TerraBarro,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp),
-                prefix = { Text("R$ ", color = TerraBarro, fontWeight = FontWeight.Bold) }
-            )
-            val precoDigitado = precoVenda.toDoubleOrNull()
-            if (precoDigitado != null && precoDigitado > animal.custo) {
-                val lucro = precoDigitado - animal.custo
-                Text(
-                    "Lucro estimado: ${NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(lucro)}",
-                    color = VerdeCaatinga,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 8.dp, start = 4.dp)
+                SertaoTextField(
+                    value = precoVenda,
+                    onValueChange = { precoVenda = it },
+                    label = "Preço de Venda (R$)",
+                    keyboardType = KeyboardType.Number,
+                    helperText = "Qual o valor total que você quer receber pelo lote?"
                 )
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("DESCRIÇÃO PARA O COMPRADOR", fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 12.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            // Campo de Descrição
-            OutlinedTextField(
-                value = descricao,
-                onValueChange = { descricao = it },
-                modifier = Modifier.fillMaxWidth().height(120.dp),
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = TerraBarro,
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
+                SertaoTextField(
+                    value = descricao,
+                    onValueChange = { descricao = it },
+                    label = "Descrição para os compradores (Opcional)",
+                    placeholder = "Ex: Animais saudáveis, vacinados, excelente genética...",
+                    helperText = "Uma boa descrição vende muito mais rápido!"
+                )
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-            Button(
-                onClick = {
-                    navController.navigate(BottomNavScreen.Ads.route) {
-                        popUpTo(BottomNavScreen.Inventory.route)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = SolNordeste, contentColor = TextoPrincipal),
-            ) {
-                Text("PUBLICAR ANÚNCIO", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                // --- O BOTÃO QUE RESOLVE O ERRO DE NAVEGAÇÃO ---
+                Button(
+                    onClick = {
+                        // A MÁGICA ACONTECE AQUI:
+                        // Usamos as novas strings de rota e voltamos a pilha para não pesar o celular.
+                        navController.navigate("marketplace") {
+                            popUpTo("inventory") { inclusive = false }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VerdeCaatinga, // Verde significa conversão/venda!
+                        contentColor = Color.White,
+                        disabledContainerColor = Color.LightGray
+                    ),
+                    enabled = precoVenda.isNotBlank() // Só deixa clicar se tiver preço
+                ) {
+                    Icon(Icons.Rounded.Storefront, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("PUBLICAR NA FEIRA", fontWeight = FontWeight.Black, fontSize = 16.sp, letterSpacing = 1.sp)
+                }
             }
         }
     }

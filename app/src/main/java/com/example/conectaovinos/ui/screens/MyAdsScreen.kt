@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.conectaovinos.BottomNavScreen
 import com.example.conectaovinos.models.Animal
 import com.example.conectaovinos.rebanhoGlobal
 import com.example.conectaovinos.ui.theme.*
@@ -32,7 +32,7 @@ fun MyAdsScreen(navController: NavController) {
         containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = { Text("OS MEUS ANÚNCIOS", fontWeight = FontWeight.Black) },
+                title = { Text("MEUS ANÚNCIOS", fontWeight = FontWeight.Black) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
                     titleContentColor = Color.White
@@ -41,7 +41,8 @@ fun MyAdsScreen(navController: NavController) {
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = { navController.navigate(BottomNavScreen.Inventory.route) },
+                // AQUI FOI ONDE O ERRO SUMIU! Rota limpa.
+                onClick = { navController.navigate("inventory") },
                 containerColor = SolNordeste,
                 contentColor = TextoPrincipal,
                 icon = { Icon(Icons.Default.Add, contentDescription = "Novo") },
@@ -101,13 +102,19 @@ fun AdItemCard(animal: Animal) {
                     modifier = Modifier.size(50.dp).background(CinzaAreia, RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("🐑", fontSize = 24.sp)
+                    // Substituímos o Emoji por um ícone profissional seguindo as diretrizes
+                    Icon(
+                        imageVector = Icons.Rounded.Pets,
+                        contentDescription = "Animal",
+                        tint = TerraBarro
+                    )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Preço no Mercado", fontSize = 12.sp, color = Color.Gray)
+                    Text("Preço na Feira", fontSize = 12.sp, color = Color.Gray)
                     Text(
-                        NumberFormat.getCurrencyInstance(Locale("pt", "PT")).format(precoSimulado),
+                        // Corrigido para pt-BR (Moeda Brasileira)
+                        NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(precoSimulado),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         color = SolNordeste

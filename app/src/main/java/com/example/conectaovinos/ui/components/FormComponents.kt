@@ -1,8 +1,10 @@
 package com.example.conectaovinos.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -19,67 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.conectaovinos.ui.theme.*
 
 /**
- * Cartão de seleção grande, ideal para escolher entre grandes categorias (ex: Animal vs Produto).
- *
- * @param title Texto exibido no cartão.
- * @param icon Ícone (Emoji ou Texto) exibido ao lado do título.
- * @param isSelected Define se o cartão está com a cor de destaque (selecionado).
- * @param modifier Modificador para ajustes de layout.
- * @param onClick Função disparada ao clicar no cartão.
- */
-@Composable
-fun TypeSelectionCard(title: String, icon: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Card(
-        modifier = modifier
-            .height(80.dp)
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) TerraBarro else Color.White
-        ),
-        elevation = CardDefaults.cardElevation(if (isSelected) 8.dp else 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(text = icon, fontSize = 28.sp)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = title,
-                fontWeight = FontWeight.Black,
-                color = if (isSelected) Color.White else TerraBarro
-            )
-        }
-    }
-}
-
-/**
- * Chip de seleção arredondado, utilizado para listas de opções horizontais (ex: Raças, Unidades).
- *
- * @param text Nome da opção.
- * @param isSelected Define se o chip está pintado com a cor de seleção.
- * @param onClick Função disparada ao selecionar o chip.
- */
-@Composable
-fun SelectableChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) VerdeCaatinga else Color.White,
-        border = if (!isSelected) BorderStroke(1.dp, Color.LightGray) else null,
-        modifier = Modifier.height(40.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 16.dp)) {
-            Text(text = text, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, color = if (isSelected) Color.White else TextoPrincipal)
-        }
-    }
-}
-
-/**
  * Título padronizado para dividir seções dentro de um formulário.
- *
- * @param text O texto do título da seção.
  */
 @Composable
 fun FormSectionTitle(text: String) {
@@ -94,14 +36,6 @@ fun FormSectionTitle(text: String) {
 
 /**
  * Campo de texto customizado com a identidade visual do app "Sertão".
- *
- * @param value Valor atual do campo de texto.
- * @param onValueChange Função disparada sempre que o texto muda.
- * @param label Rótulo flutuante do campo.
- * @param keyboardType Tipo de teclado a ser aberto (Numérico, Texto, etc).
- * @param icon Ícone opcional à esquerda do texto.
- * @param placeholder Texto de dica opcional (cinza).
- * @param helperText Texto pequeno de ajuda exibido abaixo do campo.
  */
 @Composable
 fun SertaoTextField(
@@ -134,6 +68,87 @@ fun SertaoTextField(
         )
         if (helperText != null) {
             Text(text = helperText, style = MaterialTheme.typography.bodySmall, color = VerdeCaatinga, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
+        }
+    }
+}
+
+/**
+ * Cartão de seleção de categoria focado em Acessibilidade Motora (Lei de Fitts).
+ * Possui área de toque gigante (88dp) e feedback visual imediato de seleção.
+ * Utiliza ícones do Material Design para um visual limpo e profissional.
+ */
+@Composable
+fun CategorySelectionCard(
+    titulo: String,
+    icone: ImageVector,
+    descricao: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 88.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) SolNordeste.copy(alpha = 0.15f) else Color.White
+        ),
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) SolNordeste else Color.LightGray.copy(alpha = 0.5f)
+        ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 0.dp else 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(
+                        color = if (isSelected) SolNordeste else CinzaAreia,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icone,
+                    contentDescription = null,
+                    tint = if (isSelected) Color.White else TerraBarro,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = titulo.uppercase(),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp,
+                    color = if (isSelected) TextoPrincipal else Color.DarkGray
+                )
+                Text(
+                    text = descricao,
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    lineHeight = 16.sp,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
+            RadioButton(
+                selected = isSelected,
+                onClick = null,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = TerraBarro,
+                    unselectedColor = Color.LightGray
+                )
+            )
         }
     }
 }
