@@ -19,21 +19,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext // Injeção do João
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // Injeção do João
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.Animal
-import com.example.conectaovinos.models.ProdutoDerivado
-import com.example.conectaovinos.rebanhoGlobal
+import com.example.conectaovinos.ConectaOvinosApp // Injeção do João
 import com.example.conectaovinos.ui.components.CategorySelectionCard
 import com.example.conectaovinos.ui.components.FormSectionTitle
 import com.example.conectaovinos.ui.components.SertaoTextField
 import com.example.conectaovinos.ui.theme.*
-import java.util.UUID
+import com.example.conectaovinos.ui.viewmodels.InventoryViewModel // Injeção do João
 
-// O Enum agora usa Ícones Nativos e Elegantes em vez de Emojis
+// O Enum mantém a nossa UX com Ícones Nativos e Elegantes
 enum class CategoriaProduto(val titulo: String, val icone: ImageVector, val descricao: String) {
     ANIMAL_VIVO("Animal Vivo", Icons.Rounded.Pets, "Lote de ovelhas, cordeiros ou reprodutores"),
     ANIMAL_ABATIDO("Animal Abatido", Icons.Rounded.Scale, "Carcaça inteira limpa pronta para venda"),
@@ -45,6 +45,13 @@ enum class CategoriaProduto(val titulo: String, val icone: ImageVector, val desc
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(navController: NavController) {
+    // --- O MOTOR DO JOÃO (BACKEND VIEWMODEL) ---
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val viewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModel.Factory(app.rebanhoRepository)
+    )
+
+    // --- A NOSSA UX PREMIUM (FRONTEND) ---
     var categoriaSelecionada by remember { mutableStateOf<CategoriaProduto?>(null) }
     var quantidade by remember { mutableStateOf("") }
     var custoTotal by remember { mutableStateOf("") }
@@ -77,7 +84,7 @@ fun AddProductScreen(navController: NavController) {
         ) {
             FormSectionTitle("1. O QUE VOCÊ VAI GUARDAR?")
 
-            // Os cartões agora renderizam ícones vetoriais
+            // Os cartões continuam renderizando a nossa interface fluida
             CategoriaProduto.entries.forEach { categoria ->
                 CategorySelectionCard(
                     titulo = categoria.titulo,
@@ -121,27 +128,22 @@ fun AddProductScreen(navController: NavController) {
                         onClick = {
                             val custoDouble = custoTotal.toDoubleOrNull() ?: 0.0
                             val qtdInt = quantidade.toIntOrNull() ?: 1
-                            val novoId = UUID.randomUUID().toString()
                             val nomeAmigavel = "${categoriaSelecionada?.titulo} ($qtdInt un.)"
 
+                            // --- A COSTURA DOS DOIS MUNDOS ---
+                            // Enviamos o input elegante da UI direto para as funções sólidas do Back-end
                             if (categoriaSelecionada == CategoriaProduto.ANIMAL_VIVO) {
-                                rebanhoGlobal.add(
-                                    Animal(
-                                        id = novoId,
-                                        nome = nomeAmigavel,
-                                        raca = "Lote Misto",
-                                        dataNascimento = "N/A",
-                                        custo = custoDouble
-                                    )
+                                viewModel.addAnimal(
+                                    nome = nomeAmigavel,
+                                    raca = "Lote Misto",
+                                    dataNascimento = "N/A",
+                                    custo = custoDouble
                                 )
                             } else {
-                                rebanhoGlobal.add(
-                                    ProdutoDerivado(
-                                        id = novoId,
-                                        nome = nomeAmigavel,
-                                        unidadeDeMedida = "Un/Kg",
-                                        custo = custoDouble
-                                    )
+                                viewModel.addProdutoDerivado(
+                                    nome = nomeAmigavel,
+                                    unidadeDeMedida = "Un/Kg",
+                                    custo = custoDouble
                                 )
                             }
 
@@ -165,6 +167,8 @@ fun AddProductScreen(navController: NavController) {
                             letterSpacing = 1.sp
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(40.dp))
                 }
             }
         }

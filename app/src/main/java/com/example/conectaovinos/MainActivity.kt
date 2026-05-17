@@ -25,10 +25,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.conectaovinos.ui.screens.AddProductScreen
 import com.example.conectaovinos.ui.screens.CommunityScreen
+import com.example.conectaovinos.ui.screens.CreateAdScreen
 import com.example.conectaovinos.ui.screens.DashboardScreen
 import com.example.conectaovinos.ui.screens.InventoryScreen
-// Se você já tiver a tela de Marketplace, descomente a importação abaixo:
-// import com.example.conectaovinos.ui.screens.MarketplaceScreen
+import com.example.conectaovinos.ui.screens.MyAdsScreen
 import com.example.conectaovinos.ui.theme.ConectaOvinosTheme
 import com.example.conectaovinos.ui.theme.SolNordeste
 import com.example.conectaovinos.ui.theme.TerraBarro
@@ -62,14 +62,19 @@ fun ConectaOvinosApp() {
             startDestination = "inventory", // A tela inicial é o Estoque
             modifier = Modifier.padding(innerPadding)
         ) {
-            // AQUI O ERRO FOI CORRIGIDO! As telas agora só pedem o navController
             composable("inventory") { InventoryScreen(navController) }
             composable("add_product") { AddProductScreen(navController) }
             composable("dashboard") { DashboardScreen(navController) }
             composable("community") { CommunityScreen(navController) }
 
-            // Quando for plugar a feira livre, basta descomentar esta linha:
-            // composable("marketplace") { MarketplaceScreen(navController) }
+            // Conectamos a Feira Livre à tela de Anúncios que você já tem
+            composable("marketplace") { MyAdsScreen(navController) }
+
+            // Rota inteligente que recebe o ID do animal para a criação do anúncio
+            composable("create_ad/{animalId}") { backStackEntry ->
+                val animalId = backStackEntry.arguments?.getString("animalId")
+                CreateAdScreen(navController, animalId)
+            }
         }
     }
 }
@@ -77,8 +82,8 @@ fun ConectaOvinosApp() {
 // --- CONFIGURAÇÃO DA BARRA INFERIOR (UX MOBILE-FIRST) ---
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
     object Inventory : BottomNavItem("inventory", "Estoque", Icons.Rounded.Inventory2)
-    object Dashboard : BottomNavItem("dashboard", "Finanças", Icons.Rounded.Analytics)
     object Marketplace : BottomNavItem("marketplace", "Feira", Icons.Rounded.Storefront)
+    object Dashboard : BottomNavItem("dashboard", "Finanças", Icons.Rounded.Analytics)
     object Community : BottomNavItem("community", "Rede", Icons.Rounded.Forum)
 }
 
@@ -91,16 +96,19 @@ fun AppBottomBar(navController: NavHostController) {
         BottomNavItem.Community
     )
 
-    NavigationBar(
-        containerColor = Color.White,
-        contentColor = TerraBarro,
-        tonalElevation = 8.dp
-    ) {
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentDestination = navBackStackEntry?.destination
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
 
-        // Não mostramos a barra inferior quando o usuário está cadastrando um produto (reduz distração)
-        if (currentDestination?.route != "add_product") {
+    // Não mostramos a barra inferior nas telas de formulário para focar a atenção do produtor
+    val hideBottomBarRoutes = listOf("add_product")
+    val isCreateAdRoute = currentDestination?.route?.startsWith("create_ad") == true
+
+    if (currentDestination?.route !in hideBottomBarRoutes && !isCreateAdRoute) {
+        NavigationBar(
+            containerColor = Color.White,
+            contentColor = TerraBarro,
+            tonalElevation = 8.dp
+        ) {
             items.forEach { item ->
                 val isSelected = currentDestination?.hierarchy?.any { it.route == item.route } == true
 
