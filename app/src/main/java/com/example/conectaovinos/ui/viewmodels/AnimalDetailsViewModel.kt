@@ -4,14 +4,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.conectaovinos.data.RebanhoRepository
-import com.example.conectaovinos.models.Animal
 import com.example.conectaovinos.models.Produto
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
+/**
+ * ViewModel responsável por prover os dados para a tela de Detalhes do Produto.
+ * @author Equipe ConectaFazenda
+ * @description Mantido o nome da classe original (AnimalDetailsViewModel) para compatibilidade de rotas,
+ * mas agora a arquitetura opera de forma genérica com a interface Produto (Lotes e Derivados).
+ */
 class AnimalDetailsViewModel(private val repository: RebanhoRepository) : ViewModel() {
 
+    /**
+     * Estado reativo (StateFlow) que contém o inventário completo da fazenda.
+     * A tela de detalhes observa este fluxo de dados em tempo real.
+     */
     val produtos: StateFlow<List<Produto>> = repository.produtos
         .stateIn(
             scope = viewModelScope,
@@ -19,10 +28,19 @@ class AnimalDetailsViewModel(private val repository: RebanhoRepository) : ViewMo
             initialValue = emptyList()
         )
 
-    fun getAnimal(id: String?): Animal? {
-        return produtos.value.find { it.id == id } as? Animal
+    /**
+     * Função utilitária para buscar um registro específico (Lote Vivo ou Processado)
+     * no cache de memória atual de forma síncrona.
+     * * @param id O identificador único do registro no banco de dados (UUID).
+     * @return O Produto encontrado ou nulo se não existir.
+     */
+    fun getProduto(id: String?): Produto? {
+        return produtos.value.find { it.id == id }
     }
 
+    /**
+     * Fábrica de injeção de dependência exigida pelo ciclo de vida do ViewModel no Compose.
+     */
     class Factory(private val repository: RebanhoRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")

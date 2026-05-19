@@ -1,13 +1,35 @@
 package com.example.conectaovinos
 
 import androidx.compose.runtime.mutableStateListOf
-import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
-import com.example.conectaovinos.models.ProdutoDerivado
+import com.example.conectaovinos.models.ProdutoProcessado
 
+// Dados de teste atualizados para o novo chassi da fazenda
 val rebanhoGlobal = mutableStateListOf<Produto>(
-    Animal(id = "1", nome = "Mococa 01", raca = "Santa Inês", dataNascimento = "10/05/2023", custo = 250.0),
-    ProdutoDerivado(id = "p1", nome = "Queijo de Cabra", unidadeDeMedida = "Peça de 500g", custo = 15.0),
-    Animal(id = "2", nome = "Brinco 142", raca = "Dorper", dataNascimento = "02/01/2024", custo = 300.0),
-    Animal(id = "3", nome = "Fumacinha", raca = "SRD", dataNascimento = "25/08/2022", custo = 220.0)
+    AnimalLote(
+        id = "1",
+        especie = "Ovino",
+        quantidade = 10, // Transformamos a Mococa num lote de 10 cabeças
+        custoTotal = 2500.0
+    ),
+    ProdutoProcessado(
+        id = "p1",
+        tipoProduto = "Queijo de Cabra",
+        unidadeMedida = "Unidade",
+        quantidade = 5.0,
+        custoTotal = 75.0
+    ),
+    AnimalLote(
+        id = "2",
+        especie = "Bovino",
+        quantidade = 5,
+        custoTotal = 15000.0
+    ),
+    AnimalLote(
+        id = "3",
+        especie = "Caprino",
+        quantidade = 15,
+        custoTotal = 3300.0
+    )
 )

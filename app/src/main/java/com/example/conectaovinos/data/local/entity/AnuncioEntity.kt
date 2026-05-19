@@ -6,8 +6,8 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "anuncios")
 data class AnuncioEntity(
     @PrimaryKey val id: String,
-    val animalId: String,       // referência ao animal no inventário
-    val nomeAnimal: String,     // desnormalizado para não precisar de join na UI
+    val animalId: String,
+    val nomeAnimal: String,
     val racaAnimal: String,
     val custoAnimal: Double,
     val precoVenda: Double,

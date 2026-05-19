@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.Flow
 interface RebanhoDao {
 
     // --- Animais ---
-
-    @Query("SELECT * FROM animais ORDER BY nome ASC")
+    // CORREÇÃO: Agora ordenamos pela dataRegistro (do mais novo para o mais velho)
+    @Query("SELECT * FROM animais ORDER BY dataRegistro DESC")
     fun observarAnimais(): Flow<List<AnimalEntity>>
 
     @Query("SELECT * FROM animais WHERE id = :id LIMIT 1")
@@ -19,12 +19,15 @@ interface RebanhoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun inserirAnimal(animal: AnimalEntity)
 
+    @Update
+    suspend fun atualizarAnimal(animal: AnimalEntity)
+
     @Delete
     suspend fun deletarAnimal(animal: AnimalEntity)
 
-    // --- Produtos derivados ---
-
-    @Query("SELECT * FROM produtos_derivados ORDER BY nome ASC")
+    // --- Produtos Derivados / Carnes ---
+    // CORREÇÃO: Ordenação corrigida aqui também
+    @Query("SELECT * FROM produtos_derivados ORDER BY dataRegistro DESC")
     fun observarDerivados(): Flow<List<ProdutoDerivadoEntity>>
 
     @Query("SELECT * FROM produtos_derivados WHERE id = :id LIMIT 1")
@@ -32,6 +35,10 @@ interface RebanhoDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun inserirDerivado(derivado: ProdutoDerivadoEntity)
+
+    // Já deixei o Update preparado aqui para quando formos editar os queijos e carnes!
+    @Update
+    suspend fun atualizarDerivado(derivado: ProdutoDerivadoEntity)
 
     @Delete
     suspend fun deletarDerivado(derivado: ProdutoDerivadoEntity)

@@ -10,25 +10,36 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.Animal
-import com.example.conectaovinos.rebanhoGlobal
+import com.example.conectaovinos.ConectaOvinosApp
+import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.ui.theme.*
+import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddManejoScreen(navController: NavController) {
-    val animais = rebanhoGlobal.filterIsInstance<Animal>()
+    // --- MOTOR CONECTADO AO BANCO DE DADOS REAL ---
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val viewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModel.Factory(app.rebanhoRepository)
+    )
 
-    var animalSelecionado by remember { mutableStateOf("") }
+    // Observa o estoque e filtra apenas os itens que são Lotes Vivos
+    val produtos by viewModel.produtos.collectAsState()
+    val lotes = produtos.filterIsInstance<AnimalLote>()
+
+    var loteSelecionado by remember { mutableStateOf("") }
     var tipoManejo by remember { mutableStateOf("") }
     var dataManejo by remember { mutableStateOf("") }
     var observacoes by remember { mutableStateOf("") }
 
-    var expandedAnimal by remember { mutableStateOf(false) }
+    var expandedLote by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = CinzaAreia,
@@ -64,15 +75,15 @@ fun AddManejoScreen(navController: NavController) {
             )
 
             ExposedDropdownMenuBox(
-                expanded = expandedAnimal,
-                onExpandedChange = { expandedAnimal = !expandedAnimal }
+                expanded = expandedLote,
+                onExpandedChange = { expandedLote = !expandedLote }
             ) {
                 OutlinedTextField(
-                    value = animalSelecionado.ifEmpty { "Selecione o animal..." },
+                    value = loteSelecionado.ifEmpty { "Selecione o lote..." },
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Qual animal?") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAnimal) },
+                    label = { Text("Qual Lote?") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedLote) },
                     modifier = Modifier.menuAnchor().fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = TerraBarro,
@@ -82,21 +93,21 @@ fun AddManejoScreen(navController: NavController) {
                     shape = RoundedCornerShape(12.dp)
                 )
                 ExposedDropdownMenu(
-                    expanded = expandedAnimal,
-                    onDismissRequest = { expandedAnimal = false }
+                    expanded = expandedLote,
+                    onDismissRequest = { expandedLote = false }
                 ) {
-                    if (animais.isEmpty()) {
+                    if (lotes.isEmpty()) {
                         DropdownMenuItem(
-                            text = { Text("Nenhum animal no rebanho") },
-                            onClick = { expandedAnimal = false }
+                            text = { Text("Nenhum lote registrado no estoque") },
+                            onClick = { expandedLote = false }
                         )
                     } else {
-                        animais.forEach { animal ->
+                        lotes.forEach { lote ->
                             DropdownMenuItem(
-                                text = { Text("${animal.nome} (${animal.raca})") },
+                                text = { Text(lote.nomeAmigavel) },
                                 onClick = {
-                                    animalSelecionado = animal.nome
-                                    expandedAnimal = false
+                                    loteSelecionado = lote.nomeAmigavel
+                                    expandedLote = false
                                 }
                             )
                         }
@@ -139,7 +150,6 @@ fun AddManejoScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Observações
             OutlinedTextField(
                 value = observacoes,
                 onValueChange = { observacoes = it },
@@ -157,7 +167,7 @@ fun AddManejoScreen(navController: NavController) {
 
             Button(
                 onClick = {
-                    /* adicionar na lista de manejos do animal */
+                    /* Futuramente: Salvar no banco de dados de Manejos */
                     navController.navigateUp()
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),

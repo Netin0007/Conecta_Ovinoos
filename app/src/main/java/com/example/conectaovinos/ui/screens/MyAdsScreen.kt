@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +21,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.conectaovinos.ConectaOvinosApp
-import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.models.AnimalLote
+import com.example.conectaovinos.models.Produto
+import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.models.Anuncio
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.AnuncioViewModel
@@ -30,10 +31,16 @@ import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 import java.text.NumberFormat
 import java.util.*
 
+/**
+ * Tela de Gestão de Anúncios do Produtor (MyAdsScreen).
+ * @author Equipe ConectaFazenda
+ * @description Permite que o produtor pause, reative ou exclua itens que estão no Marketplace.
+ * Atualizado para suportar a arquitetura genérica de Produtos (Lotes e Derivados).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAdsScreen(navController: NavController) {
-    // --- O MOTOR DO JOÃO (BACKEND VIEWMODELS) ---
+    // --- INJEÇÃO DE DEPENDÊNCIAS ---
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
     val anuncioViewModel: AnuncioViewModel = viewModel(
         factory = AnuncioViewModel.Factory(app.anuncioRepository)
@@ -42,11 +49,11 @@ fun MyAdsScreen(navController: NavController) {
         factory = InventoryViewModel.Factory(app.rebanhoRepository)
     )
 
+    // --- OBSERVAÇÃO REATIVA DE ESTADOS ---
     val todosAnuncios by anuncioViewModel.todosAnuncios.collectAsState()
     val todosProdutos by inventoryViewModel.produtos.collectAsState()
-    val animaisNoInventario = todosProdutos.filterIsInstance<Animal>()
 
-    // Controla o bottom sheet de seleção de animal
+    // Controla o bottom sheet de seleção do que vender
     var mostrarPicker by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -66,16 +73,15 @@ fun MyAdsScreen(navController: NavController) {
                 containerColor = SolNordeste,
                 contentColor = TextoPrincipal,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Anunciar Lote", fontWeight = FontWeight.Bold) },
+                text = { Text("Anunciar Lote/Produto", fontWeight = FontWeight.Bold) },
                 shape = RoundedCornerShape(12.dp)
             )
         }
     ) { innerPadding ->
         if (todosAnuncios.isEmpty()) {
+            // --- EMPTY STATE (NENHUM ANÚNCIO) ---
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+                modifier = Modifier.fillMaxSize().padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -91,7 +97,7 @@ fun MyAdsScreen(navController: NavController) {
                         color = TextoPrincipal
                     )
                     Text(
-                        "Toque em \"Anunciar Lote\" para colocar um animal à venda na feira livre.",
+                        "Toque em \"Anunciar\" para colocar um lote ou derivado à venda na feira livre.",
                         color = Color.Gray,
                         fontSize = 14.sp,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -100,6 +106,7 @@ fun MyAdsScreen(navController: NavController) {
                 }
             }
         } else {
+            // --- LISTA DE ANÚNCIOS ATIVOS/PAUSADOS ---
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -118,27 +125,29 @@ fun MyAdsScreen(navController: NavController) {
         }
     }
 
-    // --- BOTTOM SHEET INTELIGENTE DO JOÃO + NOSSA UX ---
+    // --- BOTTOM SHEET INTELIGENTE DE SELEÇÃO ---
     if (mostrarPicker) {
-        AnimalPickerSheet(
-            animais = animaisNoInventario,
+        ProdutoPickerSheet(
+            produtos = todosProdutos,
             anunciosAtivos = todosAnuncios.filter { it.ativo },
-            onAnimalSelecionado = { animal ->
+            onProdutoSelecionado = { produto ->
                 mostrarPicker = false
-                // Rota corrigida para bater com a nossa MainActivity
-                navController.navigate("create_ad/${animal.id}")
+                navController.navigate("create_ad/${produto.id}")
             },
             onDismiss = { mostrarPicker = false }
         )
     }
 }
 
+/**
+ * Componente de painel inferior (Bottom Sheet) para escolher qual item do estoque vai para a feira.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimalPickerSheet(
-    animais: List<Animal>,
+fun ProdutoPickerSheet(
+    produtos: List<Produto>,
     anunciosAtivos: List<Anuncio>,
-    onAnimalSelecionado: (Animal) -> Unit,
+    onProdutoSelecionado: (Produto) -> Unit,
     onDismiss: () -> Unit
 ) {
     val idsJaAnunciados = anunciosAtivos.map { it.animalId }.toSet()
@@ -149,35 +158,50 @@ fun AnimalPickerSheet(
     ) {
         Column(modifier = Modifier.padding(bottom = 32.dp)) {
             Text(
-                "Escolha um animal para anunciar",
+                "O que você quer vender?",
                 fontWeight = FontWeight.Black,
                 fontSize = 18.sp,
                 color = TextoPrincipal,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
             )
 
-            if (animais.isEmpty()) {
+            if (produtos.isEmpty()) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        "Seu inventário está vazio. Registre um animal no Estoque primeiro.",
+                        "Seu inventário está vazio. Registre algo no Estoque primeiro.",
                         color = Color.Gray,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
             } else {
                 LazyColumn {
-                    items(animais, key = { it.id }) { animal ->
-                        val jaAnunciado = animal.id in idsJaAnunciados
+                    items(produtos, key = { it.id }) { produto ->
+                        val jaAnunciado = produto.id in idsJaAnunciados
+
+                        // Emoji Dinâmico
+                        val emoji = when (produto) {
+                            is AnimalLote -> when (produto.especie.lowercase()) {
+                                "bovino" -> "🐄"
+                                "caprino" -> "🐐"
+                                "suíno", "suino" -> "🐖"
+                                else -> "🐑"
+                            }
+                            is ProdutoProcessado -> if (produto.tipoProduto.lowercase().contains("carne")) "🥩" else "🧀"
+                        }
+
+                        val subtitulo = when (produto) {
+                            is AnimalLote -> produto.especie
+                            is ProdutoProcessado -> produto.tipoProduto
+                        }
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(enabled = !jaAnunciado) {
-                                    onAnimalSelecionado(animal)
+                                    onProdutoSelecionado(produto)
                                 }
                                 .padding(horizontal = 20.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -188,22 +212,17 @@ fun AnimalPickerSheet(
                                     .background(CinzaAreia, RoundedCornerShape(10.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                // Trocamos o emoji pela nossa UI premium
-                                Icon(Icons.Rounded.Pets, contentDescription = null, tint = TerraBarro)
+                                Text(emoji, fontSize = 24.sp)
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    animal.nome.uppercase(),
+                                    produto.nomeAmigavel.uppercase(),
                                     fontWeight = FontWeight.Black,
                                     color = if (jaAnunciado) Color.Gray else TextoPrincipal,
                                     fontSize = 16.sp
                                 )
-                                Text(
-                                    animal.raca,
-                                    color = Color.Gray,
-                                    fontSize = 13.sp
-                                )
+                                Text(subtitulo, color = Color.Gray, fontSize = 13.sp)
                             }
                             if (jaAnunciado) {
                                 Surface(
@@ -228,6 +247,9 @@ fun AnimalPickerSheet(
     }
 }
 
+/**
+ * Card exibido na lista de gestão do produtor.
+ */
 @Composable
 fun AnuncioCard(
     anuncio: Anuncio,
@@ -281,11 +303,8 @@ fun AnuncioCard(
                         .background(CinzaAreia, RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Pets,
-                        contentDescription = "Animal",
-                        tint = TerraBarro
-                    )
+                    // Aqui mantemos um ícone genérico de loja
+                    Icon(imageVector = Icons.Rounded.Storefront, contentDescription = "Item", tint = TerraBarro)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -327,10 +346,7 @@ fun AnuncioCard(
                     Button(
                         onClick = onReativar,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = VerdeCaatinga,
-                            contentColor = Color.White
-                        ),
+                        colors = ButtonDefaults.buttonColors(containerColor = VerdeCaatinga, contentColor = Color.White),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("REATIVAR", fontWeight = FontWeight.Bold, fontSize = 13.sp)

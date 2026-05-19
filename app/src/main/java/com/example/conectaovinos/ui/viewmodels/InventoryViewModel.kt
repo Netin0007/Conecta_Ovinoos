@@ -4,18 +4,34 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.conectaovinos.data.RebanhoRepository
-import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
-import com.example.conectaovinos.models.ProdutoDerivado
+import com.example.conectaovinos.models.ProdutoProcessado
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+sealed interface InventoryUiState {
+    object Loading : InventoryUiState
+    data class Success(val produtos: List<Produto>) : InventoryUiState
+    data class Error(val message: String) : InventoryUiState
+}
+
 class InventoryViewModel(private val repository: RebanhoRepository) : ViewModel() {
 
-    // Converte o Flow do Room em StateFlow para a tela observar
+    val uiState: StateFlow<InventoryUiState> = repository.produtos
+        .map { InventoryUiState.Success(it) as InventoryUiState }
+        .catch { emit(InventoryUiState.Error("Falha de conexão: ${it.message}")) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = InventoryUiState.Loading
+        )
+
     val produtos: StateFlow<List<Produto>> = repository.produtos
         .stateIn(
             scope = viewModelScope,
@@ -23,28 +39,34 @@ class InventoryViewModel(private val repository: RebanhoRepository) : ViewModel(
             initialValue = emptyList()
         )
 
-    fun addAnimal(nome: String, raca: String, dataNascimento: String, custo: Double) {
+    // --- NOVA FUNÇÃO: ADICIONA LOTE DE QUALQUER ESPÉCIE ---
+    fun addAnimalLote(especie: String, quantidade: Int, custoTotal: Double) {
         viewModelScope.launch {
-            repository.addAnimal(
-                Animal(
+            repository.addAnimalLote(
+                AnimalLote(
                     id = UUID.randomUUID().toString(),
-                    nome = nome,
-                    raca = raca.ifEmpty { "Sem Raça" },
-                    dataNascimento = dataNascimento,
-                    custo = custo
+                    especie = especie,
+                    quantidade = quantidade,
+                    custoTotal = custoTotal
                 )
             )
         }
     }
 
-    fun addProdutoDerivado(nome: String, unidadeDeMedida: String, custo: Double) {
+    fun updateAnimalLote(loteAtualizado: AnimalLote) {
+        viewModelScope.launch { repository.updateAnimalLote(loteAtualizado) }
+    }
+
+    // --- NOVA FUNÇÃO: ADICIONA KG DA CARNE, QUEIJO, ETC ---
+    fun addProdutoProcessado(tipoProduto: String, unidadeMedida: String, quantidade: Double, custoTotal: Double) {
         viewModelScope.launch {
-            repository.addProdutoDerivado(
-                ProdutoDerivado(
+            repository.addProdutoProcessado(
+                ProdutoProcessado(
                     id = UUID.randomUUID().toString(),
-                    nome = nome,
-                    unidadeDeMedida = unidadeDeMedida.ifEmpty { "Unidade" },
-                    custo = custo
+                    tipoProduto = tipoProduto,
+                    unidadeMedida = unidadeMedida,
+                    quantidade = quantidade,
+                    custoTotal = custoTotal
                 )
             )
         }
@@ -54,9 +76,6 @@ class InventoryViewModel(private val repository: RebanhoRepository) : ViewModel(
         viewModelScope.launch { repository.removeProduto(id) }
     }
 
-    fun getProdutoById(id: String): Produto? = produtos.value.find { it.id == id }
-
-    // Factory — permite passar o repository sem precisar de Hilt
     class Factory(private val repository: RebanhoRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")

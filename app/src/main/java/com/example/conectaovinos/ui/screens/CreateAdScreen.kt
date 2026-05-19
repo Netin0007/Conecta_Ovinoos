@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +21,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.conectaovinos.ConectaOvinosApp
-import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.models.AnimalLote
+import com.example.conectaovinos.models.Produto
+import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.components.FormSectionTitle
 import com.example.conectaovinos.ui.components.SertaoTextField
 import com.example.conectaovinos.ui.theme.*
@@ -31,10 +32,16 @@ import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 import java.text.NumberFormat
 import java.util.*
 
+/**
+ * Tela de Criação de Anúncio (Marketplace).
+ * @author Equipe ConectaFazenda
+ * @description Formulário para publicar um lote ou produto derivado na feira virtual.
+ * Implementa cálculo dinâmico de margem de lucro baseada no custo total de produção.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateAdScreen(navController: NavController, animalId: String?) {
-    // --- O CÉREBRO DO JOÃO (BACKEND VIEWMODELS) ---
+fun CreateAdScreen(navController: NavController, produtoId: String?) {
+    // --- INJEÇÃO DE DEPENDÊNCIA (BACKEND VIEWMODELS) ---
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
     val inventoryViewModel: InventoryViewModel = viewModel(
         factory = InventoryViewModel.Factory(app.rebanhoRepository)
@@ -43,10 +50,13 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
         factory = AnuncioViewModel.Factory(app.anuncioRepository)
     )
 
+    // --- OBSERVAÇÃO DE ESTADO ---
     val todosProdutos by inventoryViewModel.produtos.collectAsState()
-    val animal = todosProdutos.find { it.id == animalId } as? Animal
 
-    // --- ESTADOS DA NOSSA UI ---
+    // Busca o produto genérico (pode ser Lote Vivo ou Processado)
+    val produto = todosProdutos.find { it.id == produtoId }
+
+    // --- ESTADOS DO FORMULÁRIO ---
     var precoVenda by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
 
@@ -69,7 +79,7 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
         }
     ) { innerPadding ->
 
-        // Tela de Carregamento enquanto o banco responde
+        // --- TRATAMENTO DE ESTADOS (LOADING / NOT FOUND) ---
         if (todosProdutos.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = TerraBarro)
@@ -77,12 +87,27 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
             return@Scaffold
         }
 
-        // Proteção contra animal inexistente
-        if (animal == null) {
+        if (produto == null) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("Animal não encontrado no estoque.", color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text("Item não encontrado no estoque.", color = Color.Gray, fontWeight = FontWeight.Bold)
             }
             return@Scaffold
+        }
+
+        // --- LÓGICA DE APRESENTAÇÃO DINÂMICA ---
+        val emoji = when (produto) {
+            is AnimalLote -> when (produto.especie.lowercase()) {
+                "bovino" -> "🐄"
+                "caprino" -> "🐐"
+                "suíno", "suino" -> "🐖"
+                else -> "🐑"
+            }
+            is ProdutoProcessado -> if (produto.tipoProduto.lowercase().contains("carne")) "🥩" else "🧀"
+        }
+
+        val detalheProduto = when (produto) {
+            is AnimalLote -> "Espécie: ${produto.especie}"
+            is ProdutoProcessado -> "Categoria: ${produto.tipoProduto}"
         }
 
         Column(
@@ -93,7 +118,7 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // --- CARD DE RESUMO DO ANIMAL ---
+            // --- CARD DE RESUMO DO PRODUTO ---
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -108,15 +133,15 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
                         modifier = Modifier.size(60.dp).background(CinzaAreia, RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Rounded.Pets, contentDescription = null, tint = TerraBarro, modifier = Modifier.size(32.dp))
+                        Text(emoji, fontSize = 32.sp)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
-                        Text(animal.nome.uppercase(), fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextoPrincipal)
-                        Text("Raça: ${animal.raca}", color = Color.Gray, fontSize = 12.sp)
+                        Text(produto.nomeAmigavel.uppercase(), fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextoPrincipal)
+                        Text(detalheProduto, color = Color.Gray, fontSize = 12.sp)
                         Text(
-                            "Custo: ${NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(animal.custo)}",
-                            color = TerraBarro, // Ajustado para a paleta de cores existente
+                            "Custo: ${NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(produto.custoTotal)}",
+                            color = TerraBarro,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
@@ -126,13 +151,13 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
 
             FormSectionTitle("1. DETALHES DA VENDA")
 
-            // Lógica inteligente de cálculo de lucro injetada no nosso TextField
+            // --- LÓGICA DE NEGÓCIO: CÁLCULO DE LUCRO EM TEMPO REAL ---
             val precoDigitado = precoVenda.toDoubleOrNull()
-            val helperLucro = if (precoDigitado != null && precoDigitado > animal.custo) {
-                val lucro = precoDigitado - animal.custo
+            val helperLucro = if (precoDigitado != null && precoDigitado > produto.custoTotal) {
+                val lucro = precoDigitado - produto.custoTotal
                 "Lucro estimado: ${NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(lucro)}"
             } else {
-                "Qual o valor total que você quer receber pelo lote?"
+                "Qual o valor total que você quer receber por este item?"
             }
 
             SertaoTextField(
@@ -149,19 +174,20 @@ fun CreateAdScreen(navController: NavController, animalId: String?) {
                 value = descricao,
                 onValueChange = { descricao = it },
                 label = "Descrição para os compradores (Opcional)",
-                placeholder = "Ex: Animais saudáveis, vacinados, excelente genética...",
+                placeholder = "Ex: Lote saudável, vacinado, queijo curado...",
                 helperText = "Uma boa descrição vende muito mais rápido!"
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- O BOTÃO FINAL COM NAVEGAÇÃO CORRIGIDA ---
+            // --- CALL TO ACTION (CTA) E INTEGRAÇÃO COM BACKEND ---
             Button(
                 onClick = {
                     val preco = precoVenda.toDoubleOrNull() ?: 0.0
                     if (preco > 0) {
-                        anuncioViewModel.publicarAnimal(animal, preco, descricao)
-                        // A nossa nova arquitetura de rotas
+                        // Delega a publicação para o ViewModel apropriado
+                        anuncioViewModel.publicarAnuncio(produto, preco, descricao)
+
                         navController.navigate("marketplace") {
                             popUpTo("inventory") { inclusive = false }
                         }

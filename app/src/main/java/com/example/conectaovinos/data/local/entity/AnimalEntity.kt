@@ -6,9 +6,8 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "animais")
 data class AnimalEntity(
     @PrimaryKey val id: String,
-    val nome: String,
-    val raca: String,
-    val dataNascimento: String,
-    val custo: Double,
-    val fotoUrl: String? = null
+    val custoTotal: Double,
+    val dataRegistro: Long,
+    val especie: String,
+    val quantidade: Int
 )

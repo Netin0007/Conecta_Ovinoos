@@ -20,27 +20,44 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
+import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.theme.*
 import java.text.NumberFormat
 import java.util.*
 
 /**
  * Componente reutilizável que representa o cartão de um anúncio na vitrine.
- * Segue os princípios de UX Rural com botões de área de toque expandida.
- *
- * @param produto A entidade Produto (pode ser Animal ou Derivado) a ser exibida.
- * @param onProductClick Função de callback disparada quando o usuário clica no cartão ou no botão de detalhes.
+ * Atualizado para o novo padrão ConectaFazenda (AnimalLote e ProdutoProcessado).
  */
 @Composable
 fun ProductCard(
     produto: Produto,
     onProductClick: (String) -> Unit
 ) {
-    val precoVenda = produto.custo * 1.5
-    val isAnimal = produto is Animal
-    val raca = if (produto is Animal) produto.raca else "Derivado"
+    // Mantemos a lógica de margem de lucro sugerida (50% em cima do custo total)
+    val precoVenda = produto.custoTotal * 1.5
+
+    // Identificação dinâmica para exibir no cartão
+    val detalhe = when (produto) {
+        is AnimalLote -> "Espécie: ${produto.especie}"
+        is ProdutoProcessado -> "Categoria: ${produto.tipoProduto}"
+    }
+
+    // Emoji Inteligente baseado no tipo de produto
+    val emoji = when (produto) {
+        is AnimalLote -> when (produto.especie.lowercase()) {
+            "bovino" -> "🐄"
+            "caprino" -> "🐐"
+            "suíno", "suino" -> "🐖"
+            else -> "🐑"
+        }
+        is ProdutoProcessado -> {
+            val tipo = produto.tipoProduto.lowercase()
+            if (tipo.contains("carne") || tipo.contains("carcaça") || tipo.contains("manta") || tipo.contains("corte")) "🥩" else "🧀"
+        }
+    }
 
     var isFavorite by remember { mutableStateOf(false) }
 
@@ -60,7 +77,8 @@ fun ProductCard(
                     .background(Brush.verticalGradient(colors = listOf(CinzaAreia, Color(0xFFE2DED4)))),
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (isAnimal) "🐑" else "🧀", fontSize = 72.sp)
+                // Emoji Dinâmico renderizado aqui
+                Text(emoji, fontSize = 72.sp)
 
                 IconButton(
                     onClick = { isFavorite = !isFavorite },
@@ -86,7 +104,7 @@ fun ProductCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = produto.nome.uppercase(),
+                        text = produto.nomeAmigavel.uppercase(),
                         fontWeight = FontWeight.Black,
                         fontSize = 18.sp,
                         color = TextoPrincipal,
@@ -100,7 +118,7 @@ fun ProductCard(
                     }
                 }
 
-                Text(text = raca, color = Color.Gray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(text = detalhe, color = Color.Gray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 
                 Spacer(modifier = Modifier.height(10.dp))
 

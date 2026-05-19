@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ConectaOvinosTheme {
-                ConectaOvinosApp()
+                ConectaOvinosMainUI()
             }
         }
     }
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
  * Estrutura Base do Aplicativo (UX Premium com Bottom Navigation)
  */
 @Composable
-fun ConectaOvinosApp() {
+fun ConectaOvinosMainUI() {
     val navController = rememberNavController()
 
     Scaffold(
@@ -63,7 +63,17 @@ fun ConectaOvinosApp() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("inventory") { InventoryScreen(navController) }
+
+            // --- ROTAS DO FORMULÁRIO INTELIGENTE ---
+            // Abre limpo para Criar
             composable("add_product") { AddProductScreen(navController) }
+
+            // Abre preenchido para Editar
+            composable("add_product/{animalId}") { backStackEntry ->
+                val animalId = backStackEntry.arguments?.getString("animalId")
+                AddProductScreen(navController, animalId)
+            }
+
             composable("dashboard") { DashboardScreen(navController) }
             composable("community") { CommunityScreen(navController) }
 
@@ -100,10 +110,10 @@ fun AppBottomBar(navController: NavHostController) {
     val currentDestination = navBackStackEntry?.destination
 
     // Não mostramos a barra inferior nas telas de formulário para focar a atenção do produtor
-    val hideBottomBarRoutes = listOf("add_product")
+    val isAddProductRoute = currentDestination?.route?.startsWith("add_product") == true
     val isCreateAdRoute = currentDestination?.route?.startsWith("create_ad") == true
 
-    if (currentDestination?.route !in hideBottomBarRoutes && !isCreateAdRoute) {
+    if (!isAddProductRoute && !isCreateAdRoute) {
         NavigationBar(
             containerColor = Color.White,
             contentColor = TerraBarro,

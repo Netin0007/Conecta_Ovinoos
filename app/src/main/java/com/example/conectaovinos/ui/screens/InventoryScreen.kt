@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Pets
 import androidx.compose.material3.*
@@ -26,7 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.conectaovinos.ConectaOvinosApp
-import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
@@ -36,25 +37,20 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(navController: NavController) {
-    // --- O MOTOR DO JOÃO (BACKEND VIEWMODEL) ---
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
     val viewModel: InventoryViewModel = viewModel(
         factory = InventoryViewModel.Factory(app.rebanhoRepository)
     )
 
-    // Ouve o banco de dados em tempo real
     val produtos by viewModel.produtos.collectAsState()
-    val valorTotalCusto = produtos.sumOf { it.custo }
+    val valorTotalCusto = produtos.sumOf { it.custoTotal }
 
     Scaffold(
         containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
                 title = { Text("MEU ESTOQUE", fontWeight = FontWeight.Black) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = TerraBarro,
-                    titleContentColor = Color.White
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = TerraBarro, titleContentColor = Color.White)
             )
         },
         floatingActionButton = {
@@ -70,13 +66,7 @@ fun InventoryScreen(navController: NavController) {
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
 
-            // --- O PAINEL DE INVESTIMENTO DO JOÃO ---
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(TerraBarro)
-                    .padding(24.dp)
-            ) {
+            Box(modifier = Modifier.fillMaxWidth().background(TerraBarro).padding(24.dp)) {
                 Column {
                     Text("Investimento em Produção", color = Color.White.copy(alpha = 0.7f), fontSize = 16.sp)
                     Text(
@@ -88,7 +78,6 @@ fun InventoryScreen(navController: NavController) {
                 }
             }
 
-            // --- A NOSSA UX PREMIUM DE LISTAGEM ---
             if (produtos.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize().weight(1f), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -107,46 +96,42 @@ fun InventoryScreen(navController: NavController) {
                     items(produtos, key = { it.id }) { product ->
                         InventoryItemCard(
                             product = product,
+                            onEditClick = {
+                                navController.navigate("add_product/${product.id}")
+                            },
                             onSellClick = {
-                                // A MÁGICA DA NAVEGAÇÃO: Envia o ID pro formulário de Anúncio!
-                                if (product is Animal) {
+                                if (product is AnimalLote) {
                                     navController.navigate("create_ad/${product.id}")
                                 }
                             }
                         )
                     }
-                    item { Spacer(modifier = Modifier.height(80.dp)) } // Espaço para o botão flutuante
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
         }
     }
 }
 
-/**
- * Componente do Cartão Híbrido (O design do João com o nosso botão premium)
- */
 @Composable
-fun InventoryItemCard(product: Produto, onSellClick: () -> Unit) {
+fun InventoryItemCard(
+    product: Produto,
+    onEditClick: () -> Unit,
+    onSellClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(CinzaAreia),
+                modifier = Modifier.size(56.dp).clip(CircleShape).background(CinzaAreia),
                 contentAlignment = Alignment.Center
             ) {
-                // Mantemos os ícones vetoriais padronizados
                 Icon(
-                    imageVector = if (product is Animal) Icons.Rounded.Pets else Icons.Rounded.Inventory2,
+                    imageVector = if (product is AnimalLote) Icons.Rounded.Pets else Icons.Rounded.Inventory2,
                     contentDescription = null,
                     tint = TerraBarro
                 )
@@ -156,7 +141,7 @@ fun InventoryItemCard(product: Produto, onSellClick: () -> Unit) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = product.nome.uppercase(),
+                    text = product.nomeAmigavel.uppercase(),
                     fontWeight = FontWeight.Black,
                     fontSize = 14.sp,
                     color = TextoPrincipal,
@@ -164,29 +149,27 @@ fun InventoryItemCard(product: Produto, onSellClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (product is Animal) "Raça: ${product.raca}" else "Derivado",
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "Custo: ${formatCurrency(product.custo)}",
+                    text = "Custo Total: ${formatCurrency(product.custoTotal)}",
                     fontSize = 12.sp,
                     color = TerraBarro,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            // O nosso botão VerdeCaatinga focado em gerar negócios!
-            if (product is Animal) {
-                Button(
-                    onClick = onSellClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = VerdeCaatinga),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                ) {
-                    Text("VENDER", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onEditClick) {
+                    Icon(Icons.Rounded.Edit, contentDescription = "Editar", tint = Color.Gray)
+                }
+
+                if (product is AnimalLote) {
+                    Button(
+                        onClick = onSellClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = VerdeCaatinga),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text("VENDER", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
                 }
             }
         }

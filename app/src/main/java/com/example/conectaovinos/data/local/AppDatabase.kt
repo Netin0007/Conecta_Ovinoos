@@ -19,14 +19,13 @@ import java.util.Date
 
 @Database(
     entities = [AnimalEntity::class, ProdutoDerivadoEntity::class, TransacaoEntity::class, AnuncioEntity::class],
-    version = 2,
+    version = 3, // Truque Ninja: Versão 3 força a recriação limpa do banco de dados!
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun rebanhoDao(): RebanhoDao
     abstract fun transacaoDao(): TransacaoDao
-
     abstract fun anunciodao(): AnuncioDao
 
     companion object {
@@ -40,7 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "conecta_ovinos.db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration() // Se a versão mudar, ele apaga o velho e recria
                     .addCallback(SeedCallback())  // popula o banco na primeira abertura
                     .build()
                     .also { INSTANCE = it }
@@ -48,27 +47,34 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 
-    // Popula o banco com dados de exemplo apenas na primeira vez que o app abre
+    // Popula o banco com dados de exemplo alinhados com o novo chassi da Fazenda
     private class SeedCallback : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
             // Roda em background para não travar a UI
             INSTANCE?.let { database ->
                 CoroutineScope(Dispatchers.IO).launch {
+                    val agora = System.currentTimeMillis()
+
+                    // --- INJETANDO OS NOVOS LOTES ---
                     database.rebanhoDao().inserirAnimal(
-                        AnimalEntity("1", "Mococa 01", "Santa Inês", "10/05/2023", 250.0)
+                        AnimalEntity("1", 2500.0, agora, "Ovino", 10)
                     )
                     database.rebanhoDao().inserirAnimal(
-                        AnimalEntity("2", "Brinco 142", "Dorper", "02/01/2024", 300.0)
+                        AnimalEntity("2", 15000.0, agora, "Bovino", 5)
                     )
                     database.rebanhoDao().inserirAnimal(
-                        AnimalEntity("3", "Fumacinha", "SRD", "25/08/2022", 220.0)
+                        AnimalEntity("3", 3300.0, agora, "Caprino", 15)
                     )
+
+                    // --- INJETANDO OS PRODUTOS PROCESSADOS ---
                     database.rebanhoDao().inserirDerivado(
-                        ProdutoDerivadoEntity("p1", "Queijo de Cabra", "Peça de 500g", 15.0)
+                        ProdutoDerivadoEntity("p1", 75.0, agora, "Queijo de Cabra", "Unidade", 5.0)
                     )
+
+                    // --- TRANSAÇÕES FINANCEIRAS ---
                     database.transacaoDao().inserirTransacao(
-                        TransacaoEntity("t1", "Venda da Mococa 01", 750.0, "Receita", Date().time, "Venda de Animal")
+                        TransacaoEntity("t1", "Venda de Lote Ovino", 7500.0, "Receita", Date().time, "Venda de Animal")
                     )
                     database.transacaoDao().inserirTransacao(
                         TransacaoEntity("t2", "Compra de Ração", 320.0, "Despesa", Date().time, "Insumos")

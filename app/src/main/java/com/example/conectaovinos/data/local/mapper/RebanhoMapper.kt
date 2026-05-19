@@ -2,39 +2,39 @@ package com.example.conectaovinos.data.local.mapper
 
 import com.example.conectaovinos.data.local.entity.AnimalEntity
 import com.example.conectaovinos.data.local.entity.ProdutoDerivadoEntity
-import com.example.conectaovinos.models.Animal
-import com.example.conectaovinos.models.ProdutoDerivado
+import com.example.conectaovinos.models.AnimalLote
+import com.example.conectaovinos.models.ProdutoProcessado
 
-fun AnimalEntity.toModel() = Animal(
+fun AnimalEntity.toModel() = AnimalLote(
     id = id,
-    nome = nome,
-    raca = raca,
-    dataNascimento = dataNascimento,
-    custo = custo,
-    fotoUrl = fotoUrl
+    custoTotal = custoTotal,
+    dataRegistro = dataRegistro,
+    especie = especie,
+    quantidade = quantidade
 )
 
-fun Animal.toEntity() = AnimalEntity(
+fun AnimalLote.toEntity() = AnimalEntity(
     id = id,
-    nome = nome,
-    raca = raca,
-    dataNascimento = dataNascimento,
-    custo = custo,
-    fotoUrl = fotoUrl
+    custoTotal = custoTotal,
+    dataRegistro = dataRegistro,
+    especie = especie,
+    quantidade = quantidade
 )
 
-fun ProdutoDerivadoEntity.toModel() = ProdutoDerivado(
+fun ProdutoDerivadoEntity.toModel() = ProdutoProcessado(
     id = id,
-    nome = nome,
-    unidadeDeMedida = unidadeDeMedida,
-    custo = custo,
-    fotoUrl = fotoUrl
+    custoTotal = custoTotal,
+    dataRegistro = dataRegistro,
+    tipoProduto = tipoProduto,
+    unidadeMedida = unidadeMedida,
+    quantidade = quantidade
 )
 
-fun ProdutoDerivado.toEntity() = ProdutoDerivadoEntity(
+fun ProdutoProcessado.toEntity() = ProdutoDerivadoEntity(
     id = id,
-    nome = nome,
-    unidadeDeMedida = unidadeDeMedida,
-    custo = custo,
-    fotoUrl = fotoUrl
+    custoTotal = custoTotal,
+    dataRegistro = dataRegistro,
+    tipoProduto = tipoProduto,
+    unidadeMedida = unidadeMedida,
+    quantidade = quantidade
 )

@@ -25,15 +25,26 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.conectaovinos.ConectaOvinosApp
+import com.example.conectaovinos.models.AnimalLote
+import com.example.conectaovinos.models.Produto
+import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.AnimalDetailsViewModel
 import com.example.conectaovinos.ui.viewmodels.AnuncioViewModel
 import java.text.NumberFormat
+import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Tela de Detalhes do Produto/Lote (AnimalDetailsScreen).
+ * @author Equipe ConectaFazenda
+ * @description Exibe o detalhamento técnico e financeiro de um lote ou produto processado,
+ * integrando os dados de custo com o módulo de vendas (Marketplace).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
+    // --- INJEÇÃO DE DEPENDÊNCIA (VM E REPOSITÓRIO) ---
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
 
     val detailsViewModel: AnimalDetailsViewModel = viewModel(
@@ -43,11 +54,12 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
         factory = AnuncioViewModel.Factory(app.anuncioRepository)
     )
 
+    // --- OBSERVAÇÃO DE ESTADO ---
     val todosProdutos by detailsViewModel.produtos.collectAsState()
     val todosAnuncios by anuncioViewModel.todosAnuncios.collectAsState()
 
-    val animal = todosProdutos.find { it.id == animalId }
-            as? com.example.conectaovinos.models.Animal
+    // Encontra o Produto (AnimalLote ou ProdutoProcessado) no Repositório Unificado
+    val produto = todosProdutos.find { it.id == animalId }
     val jaAnunciado = todosAnuncios.any { it.animalId == animalId && it.ativo }
 
     Scaffold(
@@ -55,7 +67,7 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text("FICHA DO ANIMAL", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                    Text("FICHA DE CONTROLE", fontWeight = FontWeight.Black, fontSize = 16.sp)
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
@@ -71,26 +83,35 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
         }
     ) { innerPadding ->
 
-        // Loading enquanto o banco carrega
+        // --- ESTADOS DE CARREGAMENTO (LOADING / NOT FOUND) ---
         if (todosProdutos.isEmpty()) {
-            Box(
-                Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = TerraBarro)
             }
             return@Scaffold
         }
 
-        // Banco carregou mas o animal não foi encontrado
-        if (animal == null) {
-            Box(
-                Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Animal não encontrado.", color = Color.Gray)
+        if (produto == null) {
+            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                Text("Registro não encontrado no estoque.", color = Color.Gray)
             }
             return@Scaffold
+        }
+
+        // --- CONFIGURAÇÃO DINÂMICA DE UI (EMOJIS E BADGES) ---
+        val emoji = when (produto) {
+            is AnimalLote -> when (produto.especie.lowercase()) {
+                "bovino" -> "🐄"
+                "caprino" -> "🐐"
+                "suíno", "suino" -> "🐖"
+                else -> "🐑"
+            }
+            is ProdutoProcessado -> if (produto.tipoProduto.lowercase().contains("carne")) "🥩" else "🧀"
+        }
+
+        val badgeText = when (produto) {
+            is AnimalLote -> produto.especie.uppercase()
+            is ProdutoProcessado -> "DERIVADO"
         }
 
         Column(
@@ -99,7 +120,7 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Cabeçalho com foto e nome
+            // --- HEADER: FOTO (EMOJI) E TÍTULO ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -116,11 +137,11 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                             .padding(4.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("🐑", fontSize = 64.sp)
+                        Text(emoji, fontSize = 64.sp)
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        animal.nome.uppercase(),
+                        text = produto.nomeAmigavel.uppercase(),
                         color = SolNordeste,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Black,
@@ -130,12 +151,9 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
-                        Surface(
-                            color = VerdeCaatinga,
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
+                        Surface(color = VerdeCaatinga, shape = RoundedCornerShape(16.dp)) {
                             Text(
-                                animal.raca.uppercase(),
+                                text = badgeText,
                                 color = Color.White,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                 fontSize = 12.sp,
@@ -143,12 +161,9 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                             )
                         }
                         if (jaAnunciado) {
-                            Surface(
-                                color = SolNordeste,
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
+                            Surface(color = SolNordeste, shape = RoundedCornerShape(16.dp)) {
                                 Text(
-                                    "EM VENDA",
+                                    text = "EM VENDA",
                                     color = TextoPrincipal,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                     fontSize = 12.sp,
@@ -160,12 +175,13 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                 }
             }
 
+            // --- CORPO: DADOS FINANCEIROS E TÉCNICOS ---
             Column(
                 modifier = Modifier
                     .offset(y = (-20).dp)
                     .padding(horizontal = 16.dp)
             ) {
-                // Card custo vs venda estimada
+                // Painel de Precificação (Custo vs Margem de Venda)
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(16.dp),
@@ -173,16 +189,14 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier
-                            .padding(20.dp)
-                            .fillMaxWidth(),
+                        modifier = Modifier.padding(20.dp).fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Custo de Produção", fontSize = 12.sp, color = Color.Gray)
+                            Text("Custo do Lote", fontSize = 12.sp, color = Color.Gray)
                             Text(
-                                formatCurrencyDetails(animal.custo),
+                                formatCurrencyDetails(produto.custoTotal),
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Black,
                                 color = VermelhoBarro
@@ -190,9 +204,9 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                         }
                         VerticalDivider(modifier = Modifier.height(40.dp))
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Valor de Venda Est.", fontSize = 12.sp, color = Color.Gray)
+                            Text("Venda Estimada", fontSize = 12.sp, color = Color.Gray)
                             Text(
-                                formatCurrencyDetails(animal.custo * 1.5),
+                                formatCurrencyDetails(produto.custoTotal * 1.5), // Margem de 50%
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Black,
                                 color = VerdeCaatinga
@@ -202,6 +216,7 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
                     "DADOS TÉCNICOS",
                     fontWeight = FontWeight.Bold,
@@ -211,22 +226,25 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                 )
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Detalhe 1: Data do Registro no Inventário
                     DetailItem(
                         icon = Icons.Default.DateRange,
-                        label = "Nascimento",
-                        value = animal.dataNascimento,
+                        label = "Registrado em",
+                        value = formatTimestamp(produto.dataRegistro),
                         modifier = Modifier.weight(1f)
                     )
+                    // Detalhe 2: Status Comercial
                     DetailItem(
                         icon = Icons.Default.Info,
                         label = "Status",
-                        value = if (jaAnunciado) "Em Venda" else "Em Criação",
+                        value = if (jaAnunciado) "Em Venda" else "Em Estoque",
                         modifier = Modifier.weight(1f)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // --- BOTÕES DE AÇÃO (MARKETPLACE) ---
                 if (jaAnunciado) {
                     OutlinedButton(
                         onClick = {
@@ -236,9 +254,7 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                                 navController.navigate("product_details/$anuncioId")
                             }
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                         border = androidx.compose.foundation.BorderStroke(2.dp, VerdeCaatinga),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = VerdeCaatinga),
                         shape = RoundedCornerShape(12.dp)
@@ -249,14 +265,9 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
                     }
                 } else {
                     Button(
-                        onClick = { navController.navigate("create_ad_form/${animal.id}") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SolNordeste,
-                            contentColor = TextoPrincipal
-                        ),
+                        onClick = { navController.navigate("create_ad_form/${produto.id}") },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SolNordeste, contentColor = TextoPrincipal),
                         shape = RoundedCornerShape(12.dp),
                         elevation = ButtonDefaults.buttonElevation(6.dp)
                     ) {
@@ -270,6 +281,9 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
     }
 }
 
+/**
+ * Componente isolado para exibição de métricas do produto.
+ */
 @Composable
 fun DetailItem(icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
     Card(
@@ -289,6 +303,17 @@ fun DetailItem(icon: ImageVector, label: String, value: String, modifier: Modifi
     }
 }
 
+/**
+ * Função utilitária para formatação monetária segura.
+ */
 private fun formatCurrencyDetails(value: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
+}
+
+/**
+ * Função utilitária para converter Timestamp (Long) em Data Legível (String).
+ */
+private fun formatTimestamp(timeInMillis: Long): String {
+    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
+    return formatter.format(Date(timeInMillis))
 }

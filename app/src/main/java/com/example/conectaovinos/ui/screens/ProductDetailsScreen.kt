@@ -32,25 +32,35 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.conectaovinos.ConectaOvinosApp
-import com.example.conectaovinos.models.Animal
+import com.example.conectaovinos.models.AnimalLote
+import com.example.conectaovinos.models.Produto
+import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.MarketplaceViewModel
 import java.text.NumberFormat
 import java.util.*
 
+/**
+ * Tela de Detalhes do Anúncio na Vitrine (ProductDetailsScreen).
+ * @author Equipe ConectaFazenda
+ * @description Apresenta a ficha comercial de um item disponível no Marketplace para potenciais compradores,
+ * provendo integração direta para negociação via API do WhatsApp.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
+    // --- INJEÇÃO DE DEPENDÊNCIAS ---
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
     val viewModel: MarketplaceViewModel = viewModel(
         factory = MarketplaceViewModel.Factory(app.rebanhoRepository)
     )
     val context = LocalContext.current
 
-    // Observa o StateFlow — se o produto for atualizado, a tela reflete automaticamente
+    // --- OBSERVAÇÃO REATIVA DE ESTADOS ---
     val todosProdutos by viewModel.produtos.collectAsState()
     val produto = todosProdutos.find { it.id == produtoId }
 
+    // --- TRATAMENTO DE EXCEÇÃO (PRODUTO NÃO ENCONTRADO) ---
     if (produto == null) {
         Scaffold(containerColor = CinzaAreia) { padding ->
             Box(
@@ -60,7 +70,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "Eita! Não conseguimos encontrar este anúncio.",
+                    text = "Eita! Não conseguimos encontrar este anúncio.",
                     color = Color.DarkGray,
                     fontSize = 18.sp
                 )
@@ -69,9 +79,25 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
         return
     }
 
-    val precoVenda = produto.custo * 1.5
-    val isAnimal = produto is Animal
-    val raca = if (isAnimal) (produto as Animal).raca else "Produto Derivado"
+    // --- MÉTODOS DE PRECIFICAÇÃO E ADAPTAÇÃO VISUAL DA FAZENDA ---
+    val precoVenda = produto.custoTotal * 1.5 // Margem de lucro padrão comercializada de 50%
+    val isAnimal = produto is AnimalLote
+
+    val detalheTipo = when (produto) {
+        is AnimalLote -> "Espécie: ${produto.especie}"
+        is ProdutoProcessado -> "Categoria: ${produto.tipoProduto}"
+    }
+
+    // Identificação do Emoji com base na taxonomia do produto
+    val emoji = when (produto) {
+        is AnimalLote -> when (produto.especie.lowercase()) {
+            "bovino" -> "🐄"
+            "caprino" -> "🐐"
+            "suíno", "suino" -> "🐖"
+            else -> "🐑"
+        }
+        is ProdutoProcessado -> if (produto.tipoProduto.lowercase().contains("carne")) "🥩" else "🧀"
+    }
 
     Scaffold(
         containerColor = CinzaAreia,
@@ -79,7 +105,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
             TopAppBar(
                 title = {
                     Text(
-                        "DETALHES DO ANÚNCIO",
+                        text = "DETALHES DO ANÚNCIO",
                         fontWeight = FontWeight.Black,
                         fontSize = 18.sp
                     )
@@ -95,7 +121,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                         modifier = Modifier.size(56.dp)
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar",
                             modifier = Modifier.size(28.dp)
                         )
@@ -104,13 +130,14 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
             )
         },
         bottomBar = {
+            // --- BOTÃO DE INTENT COMPARTILHADA (WHATSAPP DE CONTATO) ---
             Surface(
                 color = CinzaAreia,
                 shadowElevation = 16.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Button(
-                    onClick = { abrirWhatsApp(context, produto.nome, precoVenda) },
+                    onClick = { abrirWhatsApp(context, produto.nomeAmigavel, precoVenda) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
@@ -124,7 +151,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                     Icon(Icons.Filled.Phone, contentDescription = null, modifier = Modifier.size(32.dp))
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        "FALAR COM VENDEDOR NO WHATSAPP",
+                        text = "FALAR COM VENDEDOR NO WHATSAPP",
                         fontWeight = FontWeight.Black,
                         fontSize = 15.sp
                     )
@@ -138,6 +165,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
+            // --- BOX DE EXIBIÇÃO DA MOCK IMAGEM (EMOJI AVATAR) ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -147,7 +175,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(if (isAnimal) "🐑" else "🧀", fontSize = 120.sp)
+                Text(text = emoji, fontSize = 120.sp)
                 Surface(
                     color = Color.Black.copy(alpha = 0.6f),
                     shape = RoundedCornerShape(16.dp),
@@ -156,7 +184,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                         .padding(16.dp)
                 ) {
                     Text(
-                        "📷 1 / 3",
+                        text = "📷 1 / 1",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -165,22 +193,25 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
             }
 
             Column(modifier = Modifier.padding(20.dp)) {
+                // --- BADGES DINÂMICAS DE STATUS ---
                 Row(
                     modifier = Modifier.padding(bottom = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     BadgeStatus("🟢 Disponível", Color(0xFFE8F5E9), Color(0xFF2E7D32))
                     if (isAnimal) {
-                        BadgeStatus("💉 Vacinado", Color(0xFFE3F2FD), Color(0xFF1565C0))
+                        BadgeStatus("💉 Lote Monitorado", Color(0xFFE3F2FD), Color(0xFF1565C0))
+                    } else {
+                        BadgeStatus("🧀 Inspeção Local", Color(0xFFFFF3E0), Color(0xFFE65100))
                     }
                 }
 
                 Text(
-                    text = produto.nome.uppercase(),
+                    text = produto.nomeAmigavel.uppercase(),
                     fontWeight = FontWeight.Black,
-                    fontSize = 32.sp,
+                    fontSize = 28.sp,
                     color = TextoPrincipal,
-                    lineHeight = 36.sp
+                    lineHeight = 32.sp
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -195,22 +226,29 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Raça: $raca",
+                    text = detalheTipo,
                     color = Color.DarkGray,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
 
-                if (isAnimal) {
+                // Renderiza metadados adicionais apenas se for um lote de animais vivos
+                if (produto is AnimalLote) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        InfoCard("Idade", "12 Meses")
-                        InfoCard("Peso", "45 kg")
+                        InfoCard("Quantidade", "${produto.quantidade} un.")
+                        InfoCard("Manejo", "Em Dia")
+                    }
+                } else if (produto is ProdutoProcessado) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        InfoCard("Quantidade", "${produto.quantidade} ${produto.unidadeMedida}")
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // --- COMPONENTE DE LOCALIZAÇÃO GEOGRÁFICA REGIONAL ---
                 Surface(
                     color = TerraBarro.copy(alpha = 0.1f),
                     shape = RoundedCornerShape(12.dp),
@@ -221,7 +259,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            Icons.Filled.LocationOn,
+                            imageVector = Icons.Filled.LocationOn,
                             contentDescription = "Localização",
                             tint = TerraBarro,
                             modifier = Modifier.size(28.dp)
@@ -229,13 +267,13 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                "📍 Iguatu, Ceará",
+                                text = "📍 Tauá, Ceará",
                                 fontWeight = FontWeight.Black,
                                 color = TextoPrincipal,
                                 fontSize = 18.sp
                             )
                             Text(
-                                "Aproximadamente 12km de si",
+                                text = "Região dos Inhamuns",
                                 color = Color.DarkGray,
                                 fontSize = 14.sp
                             )
@@ -246,25 +284,22 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    "Vendedor",
+                    text = "Vendedor",
                     fontWeight = FontWeight.Black,
                     color = TextoPrincipal,
                     fontSize = 20.sp
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // --- CARD DE INFORMAÇÕES CORPORATIVAS DO PRODUTOR ---
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { },
+                    modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -275,7 +310,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Filled.Person,
+                                imageVector = Icons.Filled.Person,
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(32.dp)
@@ -284,7 +319,7 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Fazenda Esperança",
+                                text = "Produtor do IFCE",
                                 fontWeight = FontWeight.Black,
                                 color = TextoPrincipal,
                                 fontSize = 18.sp
@@ -294,24 +329,18 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                                 modifier = Modifier.padding(top = 4.dp)
                             ) {
                                 Icon(
-                                    Icons.Filled.Star,
+                                    imageVector = Icons.Filled.Star,
                                     contentDescription = null,
                                     tint = SolNordeste,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    " 4.9 (24 vendas)",
+                                    text = " 5.0 (Destaque Local)",
                                     color = Color.DarkGray,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            Text(
-                                "📞 (88) 99999-9999",
-                                color = Color.DarkGray,
-                                fontSize = 14.sp,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
                         }
                     }
                 }
@@ -319,19 +348,19 @@ fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    "Sobre o animal",
+                    text = "Sobre o Produto",
                     fontWeight = FontWeight.Black,
                     color = TextoPrincipal,
                     fontSize = 20.sp
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // --- BULLET POINTS DE DESCRIÇÃO DA PRODUÇÃO RURAL ---
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    BulletPointText("Animal saudável", " e vigoroso.")
-                    BulletPointText("Criado solto", " no pasto da caatinga.")
-                    BulletPointText("Vacinado e vermifugado", " (mês passado).")
-                    BulletPointText("Excelente genética", " garantida.")
-                    BulletPointText("Ideal para reprodução", " ou engorda rápida.")
+                    BulletPointText("Origem controlada", " e de excelente procedência local.")
+                    BulletPointText("Produção sustentável", " baseada na agricultura familiar do Sertão.")
+                    BulletPointText("Manejo e sanidade", " totalmente verificados e em conformidade.")
+                    BulletPointText("Negociação facilitada", " direto com quem produz, sem intermediários.")
                 }
 
                 Spacer(modifier = Modifier.height(100.dp))
@@ -374,7 +403,7 @@ fun InfoCard(label: String, valor: String) {
 fun BulletPointText(boldPart: String, normalPart: String) {
     Row(verticalAlignment = Alignment.Top) {
         Icon(
-            Icons.Filled.CheckCircle,
+            imageVector = Icons.Filled.CheckCircle,
             contentDescription = null,
             tint = VerdeCaatinga,
             modifier = Modifier
@@ -397,15 +426,18 @@ fun BulletPointText(boldPart: String, normalPart: String) {
     }
 }
 
+/**
+ * Dispara uma Intent explícita para abertura do cliente WhatsApp preenchendo a mensagem de negociação.
+ */
 private fun abrirWhatsApp(context: Context, nomeProduto: String, preco: Double) {
     val precoFormatado = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(preco)
-    val mensagem = "Olá! Vi o anúncio de '$nomeProduto' por $precoFormatado no Conecta:Ovinos e tenho interesse. Podemos conversar?"
-    val telefone = "5588999999999"
+    val mensagem = "Olá! Vi o anúncio de '$nomeProduto' por $precoFormatado no aplicativo ConectaFazenda e tenho interesse. Podemos conversar?"
+    val telefone = "5588999999999" // Fallback de número para simulação de contato comercial
     val intent = Intent(Intent.ACTION_VIEW)
     intent.data = Uri.parse("https://api.whatsapp.com/send?phone=$telefone&text=${Uri.encode(mensagem)}")
     try {
         context.startActivity(intent)
     } catch (e: Exception) {
-        // Fallback se não tiver WhatsApp instalado
+        // Tratamento de erro passivo para cenários onde o cliente WhatsApp não está instalado no Emulador
     }
 }
