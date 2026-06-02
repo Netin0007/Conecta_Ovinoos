@@ -29,7 +29,7 @@ import com.example.conectaovinos.ui.viewmodels.DashboardViewModel
 fun AddTransactionScreen(navController: NavController) {
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
     val viewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModel.Factory(app.transacaoRepository)
+        factory = DashboardViewModel.Factory(app.transacaoRepository, app.anuncioRepository)
     )
 
     var selectedType by remember { mutableStateOf(TipoTransacao.Despesa) }

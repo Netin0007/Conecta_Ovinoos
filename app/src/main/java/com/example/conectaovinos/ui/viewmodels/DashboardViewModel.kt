@@ -3,7 +3,9 @@ package com.example.conectaovinos.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.conectaovinos.data.AnuncioRepository
 import com.example.conectaovinos.data.TransacaoRepository
+import com.example.conectaovinos.models.Anuncio
 import com.example.conectaovinos.models.TipoTransacao
 import com.example.conectaovinos.models.Transacao
 import kotlinx.coroutines.flow.SharingStarted
@@ -13,9 +15,19 @@ import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
 
-class DashboardViewModel(private val repository: TransacaoRepository) : ViewModel() {
+class DashboardViewModel(
+    private val repository: TransacaoRepository,
+    private val anuncioRepository: AnuncioRepository
+) : ViewModel() {
 
     val transacoes: StateFlow<List<Transacao>> = repository.transacoes
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
+
+    val todosAnuncios: StateFlow<List<Anuncio>> = anuncioRepository.todosAnuncios
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -46,10 +58,17 @@ class DashboardViewModel(private val repository: TransacaoRepository) : ViewMode
     fun getLucroLiquido(lista: List<Transacao>) =
         getTotalReceitas(lista) - getTotalDespesas(lista)
 
-    class Factory(private val repository: TransacaoRepository) : ViewModelProvider.Factory {
+    fun getLucroEsperadoAnuncios(anuncios: List<Anuncio>): Double {
+        return anuncios.filter { it.ativo }.sumOf { it.precoVenda - it.custoAnimal }
+    }
+
+    class Factory(
+        private val repository: TransacaoRepository,
+        private val anuncioRepository: AnuncioRepository
+    ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return DashboardViewModel(repository) as T
+            return DashboardViewModel(repository, anuncioRepository) as T
         }
     }
 }

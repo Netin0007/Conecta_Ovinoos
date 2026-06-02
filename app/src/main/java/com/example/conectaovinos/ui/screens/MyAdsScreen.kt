@@ -39,7 +39,10 @@ import java.util.*
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyAdsScreen(navController: NavController) {
+fun MyAdsScreen(
+    navController: NavController,
+    onSwitchToBuyer: () -> Unit = {}
+) {
     // --- INJEÇÃO DE DEPENDÊNCIAS ---
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
     val anuncioViewModel: AnuncioViewModel = viewModel(
@@ -64,7 +67,16 @@ fun MyAdsScreen(navController: NavController) {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
                     titleContentColor = Color.White
-                )
+                ),
+                actions = {
+                    IconButton(onClick = onSwitchToBuyer) {
+                        Icon(
+                            Icons.Rounded.Storefront,
+                            contentDescription = "Ir para Feira",
+                            tint = SolNordeste
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {

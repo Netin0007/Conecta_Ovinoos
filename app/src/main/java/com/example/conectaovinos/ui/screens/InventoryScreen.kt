@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Pets
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,7 +37,10 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InventoryScreen(navController: NavController) {
+fun InventoryScreen(
+    navController: NavController,
+    onSwitchToBuyer: () -> Unit = {}
+) {
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
     val viewModel: InventoryViewModel = viewModel(
         factory = InventoryViewModel.Factory(app.rebanhoRepository)
@@ -50,7 +54,16 @@ fun InventoryScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { Text("MEU ESTOQUE", fontWeight = FontWeight.Black) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = TerraBarro, titleContentColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = TerraBarro, titleContentColor = Color.White),
+                actions = {
+                    IconButton(onClick = onSwitchToBuyer) {
+                        Icon(
+                            Icons.Rounded.Storefront,
+                            contentDescription = "Ir para Feira",
+                            tint = SolNordeste
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {

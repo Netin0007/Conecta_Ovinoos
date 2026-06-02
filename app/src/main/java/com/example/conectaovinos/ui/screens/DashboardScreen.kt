@@ -6,6 +6,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,13 +30,17 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(navController: NavController) {
+fun DashboardScreen(
+    navController: NavController,
+    onSwitchToBuyer: () -> Unit = {}
+) {
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
     val viewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModel.Factory(app.transacaoRepository)
+        factory = DashboardViewModel.Factory(app.transacaoRepository, app.anuncioRepository)
     )
 
     val transacoes by viewModel.transacoes.collectAsState()
+    
     val totalReceitas = viewModel.getTotalReceitas(transacoes)
     val totalDespesas = viewModel.getTotalDespesas(transacoes)
     val lucroEstimado = viewModel.getLucroLiquido(transacoes)
@@ -47,7 +53,16 @@ fun DashboardScreen(navController: NavController) {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
                     titleContentColor = Color.White
-                )
+                ),
+                actions = {
+                    IconButton(onClick = onSwitchToBuyer) {
+                        Icon(
+                            Icons.Rounded.Storefront,
+                            contentDescription = "Ir para Feira",
+                            tint = SolNordeste
+                        )
+                    }
+                }
             )
         }
     ) { innerPadding ->

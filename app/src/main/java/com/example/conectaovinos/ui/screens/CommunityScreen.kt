@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
@@ -32,7 +34,10 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommunityScreen(navController: NavController) {
+fun CommunityScreen(
+    navController: NavController,
+    onSwitchToBuyer: () -> Unit = {}
+) {
     val abas = listOf("Dicas Rápidas", "Mercado da @", "Vizinhos")
     val pagerState = rememberPagerState(pageCount = { abas.size })
     val coroutineScope = rememberCoroutineScope()
@@ -46,7 +51,16 @@ fun CommunityScreen(navController: NavController) {
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = TerraBarro,
                         titleContentColor = Color.White
-                    )
+                    ),
+                    actions = {
+                        IconButton(onClick = onSwitchToBuyer) {
+                            Icon(
+                                Icons.Rounded.Storefront,
+                                contentDescription = "Ir para Feira",
+                                tint = SolNordeste
+                            )
+                        }
+                    }
                 )
 
                 // Barra de Navegação Horizontal (Tabs)
