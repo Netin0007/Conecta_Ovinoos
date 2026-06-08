@@ -1,13 +1,14 @@
 package com.example.conectaovinos.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.conectaovinos.data.RebanhoRepository
 import com.example.conectaovinos.models.Produto
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
 /**
  * ViewModel responsável por prover os dados para a tela de Detalhes do Produto.
@@ -15,7 +16,10 @@ import kotlinx.coroutines.flow.stateIn
  * @description Mantido o nome da classe original (AnimalDetailsViewModel) para compatibilidade de rotas,
  * mas agora a arquitetura opera de forma genérica com a interface Produto (Lotes e Derivados).
  */
-class AnimalDetailsViewModel(private val repository: RebanhoRepository) : ViewModel() {
+@HiltViewModel
+class AnimalDetailsViewModel @Inject constructor(
+    private val repository: RebanhoRepository
+) : ViewModel() {
 
     /**
      * Estado reativo (StateFlow) que contém o inventário completo da fazenda.
@@ -36,15 +40,5 @@ class AnimalDetailsViewModel(private val repository: RebanhoRepository) : ViewMo
      */
     fun getProduto(id: String?): Produto? {
         return produtos.value.find { it.id == id }
-    }
-
-    /**
-     * Fábrica de injeção de dependência exigida pelo ciclo de vida do ViewModel no Compose.
-     */
-    class Factory(private val repository: RebanhoRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return AnimalDetailsViewModel(repository) as T
-        }
     }
 }

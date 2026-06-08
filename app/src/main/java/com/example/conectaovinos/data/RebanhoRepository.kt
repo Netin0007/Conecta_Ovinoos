@@ -8,12 +8,13 @@ import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import javax.inject.Inject
 
 /**
  * Fonte de verdade para o inventário da fazenda.
  * Adaptado para suportar múltiplos tipos de animais e produtos processados.
  */
-class RebanhoRepository(private val dao: RebanhoDao) {
+class RebanhoRepository @Inject constructor(private val dao: RebanhoDao) {
 
     // Combina os dois flows do DAO num único Flow<List<Produto>> para a UI
     val produtos: Flow<List<Produto>> = combine(

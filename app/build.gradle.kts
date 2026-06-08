@@ -2,6 +2,8 @@
 
 plugins {
     id("com.google.devtools.ksp")
+    id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
 
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -69,5 +71,12 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
+
+    // Dagger Hilt
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    kapt("com.google.dagger:hilt-android-compiler:2.51.1")
+
+    // Integração do Hilt com o Navigation Compose
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
 }

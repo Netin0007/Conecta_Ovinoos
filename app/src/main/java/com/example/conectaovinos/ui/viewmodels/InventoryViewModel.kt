@@ -1,12 +1,12 @@
 package com.example.conectaovinos.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.conectaovinos.data.RebanhoRepository
 import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Inject
 
 sealed interface InventoryUiState {
     object Loading : InventoryUiState
@@ -21,7 +22,10 @@ sealed interface InventoryUiState {
     data class Error(val message: String) : InventoryUiState
 }
 
-class InventoryViewModel(private val repository: RebanhoRepository) : ViewModel() {
+@HiltViewModel
+class InventoryViewModel @Inject constructor(
+    private val repository: RebanhoRepository
+) : ViewModel() {
 
     val uiState: StateFlow<InventoryUiState> = repository.produtos
         .map { InventoryUiState.Success(it) as InventoryUiState }
@@ -74,12 +78,5 @@ class InventoryViewModel(private val repository: RebanhoRepository) : ViewModel(
 
     fun removeProduto(id: String) {
         viewModelScope.launch { repository.removeProduto(id) }
-    }
-
-    class Factory(private val repository: RebanhoRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return InventoryViewModel(repository) as T
-        }
     }
 }

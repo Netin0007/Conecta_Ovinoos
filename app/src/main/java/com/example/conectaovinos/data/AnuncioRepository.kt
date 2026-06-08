@@ -6,8 +6,9 @@ import com.example.conectaovinos.data.local.mapper.toModel
 import com.example.conectaovinos.models.Anuncio
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
-class AnuncioRepository(private val dao: AnuncioDao) {
+class AnuncioRepository @Inject constructor(private val dao: AnuncioDao) {
 
     /** Apenas anúncios ativos — usado pelo Marketplace */
     val anunciosAtivos: Flow<List<Anuncio>> = dao

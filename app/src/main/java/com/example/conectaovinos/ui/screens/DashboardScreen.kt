@@ -16,13 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.DashboardViewModel
 import java.text.NumberFormat
@@ -32,15 +30,11 @@ import java.util.*
 @Composable
 fun DashboardScreen(
     navController: NavController,
-    onSwitchToBuyer: () -> Unit = {}
+    onSwitchToBuyer: () -> Unit = {},
+    viewModel: DashboardViewModel = hiltViewModel()
 ) {
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val viewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModel.Factory(app.transacaoRepository, app.anuncioRepository)
-    )
-
     val transacoes by viewModel.transacoes.collectAsState()
-    
+
     val totalReceitas = viewModel.getTotalReceitas(transacoes)
     val totalDespesas = viewModel.getTotalDespesas(transacoes)
     val lucroEstimado = viewModel.getLucroLiquido(transacoes)

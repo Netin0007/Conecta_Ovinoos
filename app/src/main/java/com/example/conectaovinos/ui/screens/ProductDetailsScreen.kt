@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,31 +28,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.AnimalLote
-import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.MarketplaceViewModel
 import java.text.NumberFormat
 import java.util.*
 
-/**
- * Tela de Detalhes do Anúncio na Vitrine (ProductDetailsScreen).
- * @author Equipe ConectaFazenda
- * @description Apresenta a ficha comercial de um item disponível no Marketplace para potenciais compradores,
- * provendo integração direta para negociação via API do WhatsApp.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductDetailsScreen(navController: NavController, produtoId: String?) {
-    // --- INJEÇÃO DE DEPENDÊNCIAS ---
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val viewModel: MarketplaceViewModel = viewModel(
-        factory = MarketplaceViewModel.Factory(app.rebanhoRepository)
-    )
+fun ProductDetailsScreen(
+    navController: NavController,
+    produtoId: String?,
+    viewModel: MarketplaceViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
 
     // --- OBSERVAÇÃO REATIVA DE ESTADOS ---
@@ -426,9 +416,6 @@ fun BulletPointText(boldPart: String, normalPart: String) {
     }
 }
 
-/**
- * Dispara uma Intent explícita para abertura do cliente WhatsApp preenchendo a mensagem de negociação.
- */
 private fun abrirWhatsApp(context: Context, nomeProduto: String, preco: Double) {
     val precoFormatado = NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(preco)
     val mensagem = "Olá! Vi o anúncio de '$nomeProduto' por $precoFormatado no aplicativo ConectaFazenda e tenho interesse. Podemos conversar?"
@@ -438,6 +425,6 @@ private fun abrirWhatsApp(context: Context, nomeProduto: String, preco: Double) 
     try {
         context.startActivity(intent)
     } catch (e: Exception) {
-        // Tratamento de erro passivo para cenários onde o cliente WhatsApp não está instalado no Emulador
+        // Tratamento de erro passivo
     }
 }

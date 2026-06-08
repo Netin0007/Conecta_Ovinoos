@@ -18,13 +18,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.TipoTransacao
 import com.example.conectaovinos.models.Transacao
 import com.example.conectaovinos.ui.theme.*
@@ -36,13 +34,9 @@ import java.util.*
 @Composable
 fun FinancialScreen(
     navController: NavController,
-    onSwitchToBuyer: () -> Unit = {}
+    onSwitchToBuyer: () -> Unit = {},
+    viewModel: DashboardViewModel = hiltViewModel()
 ) {
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val viewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModel.Factory(app.transacaoRepository, app.anuncioRepository)
-    )
-
     val transacoes by viewModel.transacoes.collectAsState()
     val anuncios by viewModel.todosAnuncios.collectAsState()
 
@@ -135,7 +129,7 @@ fun FinancialDashboard(receitas: Double, despesas: Double, lucro: Double, lucroE
             Spacer(modifier = Modifier.width(8.dp))
             Text("RESUMO DA FAZENDA", fontWeight = FontWeight.Black, fontSize = 16.sp, color = TextoPrincipal)
         }
-        
+
         Spacer(modifier = Modifier.height(20.dp))
 
         Row(
@@ -170,7 +164,7 @@ fun FinancialDashboard(receitas: Double, despesas: Double, lucro: Double, lucroE
                     fontSize = 24.sp
                 )
             }
-            
+
             Surface(
                 color = SolNordeste.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(12.dp)
@@ -208,14 +202,14 @@ fun TransactionListItem(transacao: Transacao) {
             ) {
                 Text(if (transacao.tipo == TipoTransacao.Receita) "⬆️" else "⬇️", fontSize = 18.sp)
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(transacao.descricao.uppercase(), fontWeight = FontWeight.Black, fontSize = 14.sp, color = TextoPrincipal)
                 Text(transacao.categoria, fontSize = 12.sp, color = Color.Gray)
             }
-            
+
             Text(
                 text = formatCurrency(transacao.valor),
                 color = if (transacao.tipo == TipoTransacao.Receita) VerdeCaatinga else Color.Red,

@@ -13,25 +13,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.TipoTransacao
 import com.example.conectaovinos.ui.viewmodels.DashboardViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTransactionScreen(navController: NavController) {
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val viewModel: DashboardViewModel = viewModel(
-        factory = DashboardViewModel.Factory(app.transacaoRepository, app.anuncioRepository)
-    )
-
+fun AddTransactionScreen(
+    navController: NavController,
+    viewModel: DashboardViewModel = hiltViewModel()
+) {
     var selectedType by remember { mutableStateOf(TipoTransacao.Despesa) }
     var descricao by remember { mutableStateOf("") }
     var valor by remember { mutableStateOf("") }

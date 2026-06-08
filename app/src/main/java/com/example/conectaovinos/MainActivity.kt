@@ -23,6 +23,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+
+// Imports das suas telas
 import com.example.conectaovinos.ui.screens.AddProductScreen
 import com.example.conectaovinos.ui.screens.CommunityScreen
 import com.example.conectaovinos.ui.screens.CreateAdScreen
@@ -33,10 +35,20 @@ import com.example.conectaovinos.ui.screens.MarketplaceScreen
 import com.example.conectaovinos.ui.screens.MyAdsScreen
 import com.example.conectaovinos.ui.screens.RoleSelectionScreen
 import com.example.conectaovinos.ui.screens.AddTransactionScreen
+
+// Imports do seu tema
 import com.example.conectaovinos.ui.theme.ConectaOvinosTheme
 import com.example.conectaovinos.ui.theme.SolNordeste
 import com.example.conectaovinos.ui.theme.TerraBarro
 
+// Import da nova classe de Rotas (Type-Safe)
+import com.example.conectaovinos.utils.navigation.NavRoutes
+
+// IMPORTANTE: Adicione o import do Hilt
+import dagger.hilt.android.AndroidEntryPoint
+
+// IMPORTANTE: Adicione a anotação antes da classe
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,9 +66,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ConectaOvinosMainUI() {
     val navController = rememberNavController()
-    
+
     val onSwitchToBuyer = {
-        navController.navigate("marketplace_buyer") {
+        navController.navigate(NavRoutes.MarketplaceBuyer.route) {
             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
         }
     }
@@ -69,42 +81,42 @@ fun ConectaOvinosMainUI() {
         // O MAESTRO DA NAVEGAÇÃO
         NavHost(
             navController = navController,
-            startDestination = "selection", // Inicia na tela de escolha de perfil
+            startDestination = NavRoutes.Selection.route, // Inicia na tela de escolha de perfil
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("selection") { RoleSelectionScreen(navController) }
+            composable(NavRoutes.Selection.route) { RoleSelectionScreen(navController) }
 
-            composable("inventory") { InventoryScreen(navController, onSwitchToBuyer) }
+            composable(NavRoutes.Inventory.route) { InventoryScreen(navController, onSwitchToBuyer) }
 
             // --- ROTAS DO FORMULÁRIO INTELIGENTE ---
             // Abre limpo para Criar
-            composable("add_product") { AddProductScreen(navController) }
+            composable(NavRoutes.AddProduct.route) { AddProductScreen(navController) }
 
             // Abre preenchido para Editar
-            composable("add_product/{animalId}") { backStackEntry ->
+            composable(NavRoutes.EditProduct.route) { backStackEntry ->
                 val animalId = backStackEntry.arguments?.getString("animalId")
                 AddProductScreen(navController, animalId)
             }
 
-            composable("dashboard") { DashboardScreen(navController, onSwitchToBuyer) }
-            composable("financial") { FinancialScreen(navController, onSwitchToBuyer) }
-            composable("add_transaction") { AddTransactionScreen(navController) }
-            composable("community") { CommunityScreen(navController, onSwitchToBuyer) }
+            composable(NavRoutes.Dashboard.route) { DashboardScreen(navController, onSwitchToBuyer) }
+            composable(NavRoutes.Financial.route) { FinancialScreen(navController, onSwitchToBuyer) }
+            composable(NavRoutes.AddTransaction.route) { AddTransactionScreen(navController) }
+            composable(NavRoutes.Community.route) { CommunityScreen(navController, onSwitchToBuyer) }
 
             // Tela de Gestão de Anúncios (PRODUTOR)
-            composable("marketplace") { MyAdsScreen(navController, onSwitchToBuyer) }
+            composable(NavRoutes.Marketplace.route) { MyAdsScreen(navController, onSwitchToBuyer) }
 
             // Tela de Compra (COMPRADOR)
-            composable("marketplace_buyer") {
+            composable(NavRoutes.MarketplaceBuyer.route) {
                 MarketplaceScreen(
                     navController = navController,
                     onLogout = {
-                        navController.navigate("selection") {
-                            popUpTo("selection") { inclusive = true }
+                        navController.navigate(NavRoutes.Selection.route) {
+                            popUpTo(NavRoutes.Selection.route) { inclusive = true }
                         }
                     },
                     onSwitchToProducer = {
-                        navController.navigate("inventory") {
+                        navController.navigate(NavRoutes.Inventory.route) {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                         }
                     }
@@ -112,7 +124,7 @@ fun ConectaOvinosMainUI() {
             }
 
             // Rota inteligente que recebe o ID do animal para a criação do anúncio
-            composable("create_ad/{animalId}") { backStackEntry ->
+            composable(NavRoutes.CreateAd.route) { backStackEntry ->
                 val animalId = backStackEntry.arguments?.getString("animalId")
                 CreateAdScreen(navController, animalId)
             }
@@ -122,10 +134,10 @@ fun ConectaOvinosMainUI() {
 
 // --- CONFIGURAÇÃO DA BARRA INFERIOR (UX MOBILE-FIRST) ---
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
-    object Inventory : BottomNavItem("inventory", "Estoque", Icons.Rounded.Inventory2)
-    object Marketplace : BottomNavItem("marketplace", "Feira", Icons.Rounded.Storefront)
-    object Financial : BottomNavItem("financial", "Finanças", Icons.Rounded.Analytics)
-    object Community : BottomNavItem("community", "Rede", Icons.Rounded.Forum)
+    object Inventory : BottomNavItem(NavRoutes.Inventory.route, "Estoque", Icons.Rounded.Inventory2)
+    object Marketplace : BottomNavItem(NavRoutes.Marketplace.route, "Feira", Icons.Rounded.Storefront)
+    object Financial : BottomNavItem(NavRoutes.Financial.route, "Finanças", Icons.Rounded.Analytics)
+    object Community : BottomNavItem(NavRoutes.Community.route, "Rede", Icons.Rounded.Forum)
 }
 
 @Composable
@@ -141,10 +153,10 @@ fun AppBottomBar(navController: NavHostController) {
     val currentDestination = navBackStackEntry?.destination
 
     // Não mostramos a barra inferior em certas telas para focar a atenção ou mudar o contexto
-    val isAddProductRoute = currentDestination?.route?.startsWith("add_product") == true
+    val isAddProductRoute = currentDestination?.route?.startsWith(NavRoutes.AddProduct.route) == true
     val isCreateAdRoute = currentDestination?.route?.startsWith("create_ad") == true
-    val isSelectionRoute = currentDestination?.route == "selection"
-    val isMarketplaceBuyerRoute = currentDestination?.route == "marketplace_buyer"
+    val isSelectionRoute = currentDestination?.route == NavRoutes.Selection.route
+    val isMarketplaceBuyerRoute = currentDestination?.route == NavRoutes.MarketplaceBuyer.route
 
     if (!isAddProductRoute && !isCreateAdRoute && !isSelectionRoute && !isMarketplaceBuyerRoute) {
         NavigationBar(

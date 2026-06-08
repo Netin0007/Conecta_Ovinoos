@@ -1,21 +1,23 @@
 package com.example.conectaovinos.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.conectaovinos.data.AnuncioRepository
 import com.example.conectaovinos.data.TransacaoRepository
 import com.example.conectaovinos.models.Anuncio
 import com.example.conectaovinos.models.TipoTransacao
 import com.example.conectaovinos.models.Transacao
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 
-class DashboardViewModel(
+@HiltViewModel
+class DashboardViewModel @Inject constructor(
     private val repository: TransacaoRepository,
     private val anuncioRepository: AnuncioRepository
 ) : ViewModel() {
@@ -60,15 +62,5 @@ class DashboardViewModel(
 
     fun getLucroEsperadoAnuncios(anuncios: List<Anuncio>): Double {
         return anuncios.filter { it.ativo }.sumOf { it.precoVenda - it.custoAnimal }
-    }
-
-    class Factory(
-        private val repository: TransacaoRepository,
-        private val anuncioRepository: AnuncioRepository
-    ) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return DashboardViewModel(repository, anuncioRepository) as T
-        }
     }
 }

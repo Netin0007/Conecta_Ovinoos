@@ -6,8 +6,9 @@ import com.example.conectaovinos.data.local.mapper.toModel
 import com.example.conectaovinos.models.Transacao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
-class TransacaoRepository(private val dao: TransacaoDao) {
+class TransacaoRepository @Inject constructor(private val dao: TransacaoDao) {
 
     val transacoes: Flow<List<Transacao>> = dao
         .observarTransacoes()

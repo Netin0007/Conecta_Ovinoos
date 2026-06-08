@@ -14,13 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
@@ -31,27 +29,14 @@ import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 import java.text.NumberFormat
 import java.util.*
 
-/**
- * Tela de Gestão de Anúncios do Produtor (MyAdsScreen).
- * @author Equipe ConectaFazenda
- * @description Permite que o produtor pause, reative ou exclua itens que estão no Marketplace.
- * Atualizado para suportar a arquitetura genérica de Produtos (Lotes e Derivados).
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAdsScreen(
     navController: NavController,
-    onSwitchToBuyer: () -> Unit = {}
+    onSwitchToBuyer: () -> Unit = {},
+    anuncioViewModel: AnuncioViewModel = hiltViewModel(),
+    inventoryViewModel: InventoryViewModel = hiltViewModel()
 ) {
-    // --- INJEÇÃO DE DEPENDÊNCIAS ---
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val anuncioViewModel: AnuncioViewModel = viewModel(
-        factory = AnuncioViewModel.Factory(app.anuncioRepository)
-    )
-    val inventoryViewModel: InventoryViewModel = viewModel(
-        factory = InventoryViewModel.Factory(app.rebanhoRepository)
-    )
-
     // --- OBSERVAÇÃO REATIVA DE ESTADOS ---
     val todosAnuncios by anuncioViewModel.todosAnuncios.collectAsState()
     val todosProdutos by inventoryViewModel.produtos.collectAsState()

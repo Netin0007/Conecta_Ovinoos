@@ -1,15 +1,16 @@
 package com.example.conectaovinos.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.conectaovinos.data.RebanhoRepository
 import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
 /**
  * ViewModel responsável por gerenciar o estado e os filtros da vitrine (Marketplace).
@@ -17,7 +18,10 @@ import kotlinx.coroutines.flow.stateIn
  * @description Integra-se com o repositório unificado para buscar os produtos disponíveis e
  * aplica lógicas de filtro e busca em memória para a listagem na feira virtual.
  */
-class MarketplaceViewModel(private val repository: RebanhoRepository) : ViewModel() {
+@HiltViewModel
+class MarketplaceViewModel @Inject constructor(
+    private val repository: RebanhoRepository
+) : ViewModel() {
 
     /** Fluxo de dados reativo com a lista completa do inventário. */
     val produtos: StateFlow<List<Produto>> = repository.produtos
@@ -54,14 +58,4 @@ class MarketplaceViewModel(private val repository: RebanhoRepository) : ViewMode
      * Busca de produto específico por ID.
      */
     fun getProdutoById(id: String): Produto? = produtos.value.find { it.id == id }
-
-    /**
-     * Factory padronizada para injeção de dependências do ViewModel.
-     */
-    class Factory(private val repository: RebanhoRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return MarketplaceViewModel(repository) as T
-        }
-    }
 }

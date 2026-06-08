@@ -21,20 +21,20 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.components.CategorySelectionCard
 import com.example.conectaovinos.ui.components.SertaoTextField
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
+
+// IMPORTANTE: Adicionando o hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
 // ATUALIZADO: Nomes mais comerciais focados na fazenda inteira
 enum class CategoriaProduto(val titulo: String, val icone: ImageVector, val descricao: String) {
@@ -50,9 +50,13 @@ val unidadesDisponiveis = listOf("Kg", "Unidade", "Litro")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddProductScreen(navController: NavController, produtoId: String? = null) {
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val viewModel: InventoryViewModel = viewModel(factory = InventoryViewModel.Factory(app.rebanhoRepository))
+fun AddProductScreen(
+    navController: NavController,
+    produtoId: String? = null,
+    // --- O HILT INJETA O VIEWMODEL AUTOMATICAMENTE AQUI ---
+    viewModel: InventoryViewModel = hiltViewModel()
+) {
+    // As linhas antigas do LocalContext e da Factory sumiram!
 
     val produtos by viewModel.produtos.collectAsState()
     val isEditMode = produtoId != null

@@ -20,14 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.ui.theme.*
@@ -39,13 +37,9 @@ import java.util.*
 @Composable
 fun InventoryScreen(
     navController: NavController,
-    onSwitchToBuyer: () -> Unit = {}
+    onSwitchToBuyer: () -> Unit = {},
+    viewModel: InventoryViewModel = hiltViewModel()
 ) {
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val viewModel: InventoryViewModel = viewModel(
-        factory = InventoryViewModel.Factory(app.rebanhoRepository)
-    )
-
     val produtos by viewModel.produtos.collectAsState()
     val valorTotalCusto = produtos.sumOf { it.custoTotal }
 

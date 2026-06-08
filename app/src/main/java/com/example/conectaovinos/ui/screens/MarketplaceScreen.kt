@@ -19,13 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.Anuncio
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.AnuncioViewModel
@@ -37,13 +35,9 @@ import java.util.*
 fun MarketplaceScreen(
     navController: NavController,
     onLogout: () -> Unit = {},
-    onSwitchToProducer: () -> Unit = {}
+    onSwitchToProducer: () -> Unit = {},
+    viewModel: AnuncioViewModel = hiltViewModel()
 ) {
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val viewModel: AnuncioViewModel = viewModel(
-        factory = AnuncioViewModel.Factory(app.anuncioRepository)
-    )
-
     var searchQuery by remember { mutableStateOf("") }
     var categoriaSelecionada by remember { mutableStateOf("Todos") }
     val categorias = listOf("Todos", "Animais", "Derivados")

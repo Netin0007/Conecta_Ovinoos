@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.conectaovinos.data.local.dao.AnuncioDao
 import com.example.conectaovinos.data.local.dao.RebanhoDao
@@ -19,18 +20,34 @@ import java.util.Date
 
 @Database(
     entities = [AnimalEntity::class, ProdutoDerivadoEntity::class, TransacaoEntity::class, AnuncioEntity::class],
-    version = 3, // Truque Ninja: Versão 3 força a recriação limpa do banco de dados!
-    exportSchema = false
+    version = 3,
+    exportSchema = true // ✅ 1. Mudado para true para salvar o histórico do banco
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun rebanhoDao(): RebanhoDao
     abstract fun transacaoDao(): TransacaoDao
-    abstract fun anunciodao(): AnuncioDao
+    abstract fun anuncioDao(): AnuncioDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        // ✅ 2. Criando a regra de migração da versão 2 para a 3
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // ATENÇÃO: Se as suas classes AnimalEntity ou ProdutoDerivadoEntity tiverem
+                // um @Entity(tableName = "nome_customizado"), mude os nomes abaixo para bater com o nome customizado.
+                // Caso contrário, o Room usa o próprio nome da classe como nome da tabela.
+
+                // Adicionando espécie e quantidade na tabela de animais
+                database.execSQL("ALTER TABLE AnimalEntity ADD COLUMN especie TEXT NOT NULL DEFAULT ''")
+                database.execSQL("ALTER TABLE AnimalEntity ADD COLUMN quantidade INTEGER NOT NULL DEFAULT 0")
+
+                // Adicionando unidade de medida na tabela de produtos
+                database.execSQL("ALTER TABLE ProdutoDerivadoEntity ADD COLUMN unidadeMedida TEXT NOT NULL DEFAULT ''")
+            }
+        }
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -39,7 +56,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "conecta_ovinos.db"
                 )
-                    .fallbackToDestructiveMigration() // Se a versão mudar, ele apaga o velho e recria
+                    // ✅ 3. Adicionamos a migração e removemos o fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_2_3)
                     .addCallback(SeedCallback())  // popula o banco na primeira abertura
                     .build()
                     .also { INSTANCE = it }

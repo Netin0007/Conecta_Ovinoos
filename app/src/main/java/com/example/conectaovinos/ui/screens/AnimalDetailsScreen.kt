@@ -18,13 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
@@ -37,23 +35,15 @@ import java.util.*
 
 /**
  * Tela de Detalhes do Produto/Lote (AnimalDetailsScreen).
- * @author Equipe ConectaFazenda
- * @description Exibe o detalhamento técnico e financeiro de um lote ou produto processado,
- * integrando os dados de custo com o módulo de vendas (Marketplace).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
-    // --- INJEÇÃO DE DEPENDÊNCIA (VM E REPOSITÓRIO) ---
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-
-    val detailsViewModel: AnimalDetailsViewModel = viewModel(
-        factory = AnimalDetailsViewModel.Factory(app.rebanhoRepository)
-    )
-    val anuncioViewModel: AnuncioViewModel = viewModel(
-        factory = AnuncioViewModel.Factory(app.anuncioRepository)
-    )
-
+fun AnimalDetailsScreen(
+    navController: NavController,
+    animalId: String?,
+    detailsViewModel: AnimalDetailsViewModel = hiltViewModel(),
+    anuncioViewModel: AnuncioViewModel = hiltViewModel()
+) {
     // --- OBSERVAÇÃO DE ESTADO ---
     val todosProdutos by detailsViewModel.produtos.collectAsState()
     val todosAnuncios by anuncioViewModel.todosAnuncios.collectAsState()
@@ -281,9 +271,6 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
     }
 }
 
-/**
- * Componente isolado para exibição de métricas do produto.
- */
 @Composable
 fun DetailItem(icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
     Card(
@@ -303,16 +290,10 @@ fun DetailItem(icon: ImageVector, label: String, value: String, modifier: Modifi
     }
 }
 
-/**
- * Função utilitária para formatação monetária segura.
- */
 private fun formatCurrencyDetails(value: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
 }
 
-/**
- * Função utilitária para converter Timestamp (Long) em Data Legível (String).
- */
 private fun formatTimestamp(timeInMillis: Long): String {
     val formatter = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
     return formatter.format(Date(timeInMillis))

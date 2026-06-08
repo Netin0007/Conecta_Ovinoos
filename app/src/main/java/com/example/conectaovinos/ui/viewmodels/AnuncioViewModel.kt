@@ -1,19 +1,20 @@
 package com.example.conectaovinos.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.conectaovinos.data.AnuncioRepository
 import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.models.Anuncio
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 
 /**
  * ViewModel responsável pela lógica de negócios da Feira Livre (Marketplace).
@@ -22,7 +23,10 @@ import java.util.UUID
  * Utiliza o padrão de adaptador (Adapter Pattern) para converter Produtos Genéricos
  * no formato de Anúncio compatível com o banco de dados existente.
  */
-class AnuncioViewModel(private val repository: AnuncioRepository) : ViewModel() {
+@HiltViewModel
+class AnuncioViewModel @Inject constructor(
+    private val repository: AnuncioRepository
+) : ViewModel() {
 
     /** Cache reativo de anúncios ativos disponíveis para venda */
     val anunciosAtivos: StateFlow<List<Anuncio>> = repository.anunciosAtivos
@@ -80,11 +84,4 @@ class AnuncioViewModel(private val repository: AnuncioRepository) : ViewModel() 
 
     fun isProdutoJaAnunciado(produtoId: String): Boolean =
         anunciosAtivos.value.any { it.animalId == produtoId }
-
-    class Factory(private val repository: AnuncioRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return AnuncioViewModel(repository) as T
-        }
-    }
 }

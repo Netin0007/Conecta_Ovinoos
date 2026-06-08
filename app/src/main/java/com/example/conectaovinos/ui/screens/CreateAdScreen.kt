@@ -13,16 +13,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.AnimalLote
-import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.components.FormSectionTitle
 import com.example.conectaovinos.ui.components.SertaoTextField
@@ -32,24 +29,14 @@ import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 import java.text.NumberFormat
 import java.util.*
 
-/**
- * Tela de Criação de Anúncio (Marketplace).
- * @author Equipe ConectaFazenda
- * @description Formulário para publicar um lote ou produto derivado na feira virtual.
- * Implementa cálculo dinâmico de margem de lucro baseada no custo total de produção.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateAdScreen(navController: NavController, produtoId: String?) {
-    // --- INJEÇÃO DE DEPENDÊNCIA (BACKEND VIEWMODELS) ---
-    val app = LocalContext.current.applicationContext as ConectaOvinosApp
-    val inventoryViewModel: InventoryViewModel = viewModel(
-        factory = InventoryViewModel.Factory(app.rebanhoRepository)
-    )
-    val anuncioViewModel: AnuncioViewModel = viewModel(
-        factory = AnuncioViewModel.Factory(app.anuncioRepository)
-    )
-
+fun CreateAdScreen(
+    navController: NavController,
+    produtoId: String?,
+    inventoryViewModel: InventoryViewModel = hiltViewModel(),
+    anuncioViewModel: AnuncioViewModel = hiltViewModel()
+) {
     // --- OBSERVAÇÃO DE ESTADO ---
     val todosProdutos by inventoryViewModel.produtos.collectAsState()
 
@@ -185,7 +172,6 @@ fun CreateAdScreen(navController: NavController, produtoId: String?) {
                 onClick = {
                     val preco = precoVenda.toDoubleOrNull() ?: 0.0
                     if (preco > 0) {
-                        // Delega a publicação para o ViewModel apropriado
                         anuncioViewModel.publicarAnuncio(produto, preco, descricao)
 
                         navController.navigate("marketplace") {
