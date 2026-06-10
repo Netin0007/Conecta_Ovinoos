@@ -1,85 +1,77 @@
 package com.example.conectaovinos.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.conectaovinos.data.RebanhoRepository
-import com.example.conectaovinos.models.AnimalLote
-import com.example.conectaovinos.models.Produto
-import com.example.conectaovinos.models.ProdutoProcessado
-import kotlinx.coroutines.flow.SharingStarted
+import com.example.conectaovinos.models.AnimalModel
+import com.example.conectaovinos.models.DerivadoModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
+import java.util.Date
 
-sealed interface InventoryUiState {
-    object Loading : InventoryUiState
-    data class Success(val produtos: List<Produto>) : InventoryUiState
-    data class Error(val message: String) : InventoryUiState
-}
+class InventoryViewModel : ViewModel() {
 
-class InventoryViewModel(private val repository: RebanhoRepository) : ViewModel() {
+    private val _uiState = MutableStateFlow(InventoryUiState())
+    val uiState: StateFlow<InventoryUiState> = _uiState.asStateFlow()
 
-    val uiState: StateFlow<InventoryUiState> = repository.produtos
-        .map { InventoryUiState.Success(it) as InventoryUiState }
-        .catch { emit(InventoryUiState.Error("Falha de conexão: ${it.message}")) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = InventoryUiState.Loading
-        )
+    init {
+        // Quando o ViewModel nasce, ele busca os dados (aqui estamos simulando o Firebase)
+        carregarDadosMockParaTesteUI()
+    }
 
-    val produtos: StateFlow<List<Produto>> = repository.produtos
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList()
-        )
-
-    // --- NOVA FUNÇÃO: ADICIONA LOTE DE QUALQUER ESPÉCIE ---
-    fun addAnimalLote(especie: String, quantidade: Int, custoTotal: Double) {
-        viewModelScope.launch {
-            repository.addAnimalLote(
-                AnimalLote(
-                    id = UUID.randomUUID().toString(),
-                    especie = especie,
-                    quantidade = quantidade,
-                    custoTotal = custoTotal
-                )
-            )
+    fun onEvent(event: InventoryEvent) {
+        when (event) {
+            is InventoryEvent.SelectTab -> _uiState.update { it.copy(selectedTabIndex = event.tabIndex) }
+            is InventoryEvent.RefreshData -> carregarDadosMockParaTesteUI()
+            is InventoryEvent.DeleteItem -> deletarItem(event.id, event.isAnimal)
         }
     }
 
-    fun updateAnimalLote(loteAtualizado: AnimalLote) {
-        viewModelScope.launch { repository.updateAnimalLote(loteAtualizado) }
+    private fun calcularValorTotal(animais: List<AnimalModel>, derivados: List<DerivadoModel>): Double {
+        val somaAnimais = animais.sumOf { it.salePrice } // Ou custo, dependendo da sua regra
+        val somaDerivados = derivados.sumOf { it.salePrice }
+        return somaAnimais + somaDerivados
     }
 
-    // --- NOVA FUNÇÃO: ADICIONA KG DA CARNE, QUEIJO, ETC ---
-    fun addProdutoProcessado(tipoProduto: String, unidadeMedida: String, quantidade: Double, custoTotal: Double) {
-        viewModelScope.launch {
-            repository.addProdutoProcessado(
-                ProdutoProcessado(
-                    id = UUID.randomUUID().toString(),
-                    tipoProduto = tipoProduto,
-                    unidadeMedida = unidadeMedida,
-                    quantidade = quantidade,
-                    custoTotal = custoTotal
-                )
-            )
+    private fun deletarItem(id: String, isAnimal: Boolean) {
+        // No futuro: repository.deleteFromFirebase(id)
+        _uiState.update { state ->
+            if (isAnimal) {
+                val novaLista = state.animais.filter { it.id != id }
+                state.copy(animais = novaLista, valorTotalEstoque = calcularValorTotal(novaLista, state.derivados))
+            } else {
+                val novaLista = state.derivados.filter { it.id != id }
+                state.copy(derivados = novaLista, valorTotalEstoque = calcularValorTotal(state.animais, novaLista))
+            }
         }
     }
 
-    fun removeProduto(id: String) {
-        viewModelScope.launch { repository.removeProduto(id) }
-    }
+    // TODO: Substituir essa função pela busca real no Firebase Firestore
+    private fun carregarDadosMockParaTesteUI() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            delay(800) // Finge que tá baixando da internet
 
-    class Factory(private val repository: RebanhoRepository) : ViewModelProvider.Factory {
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            @Suppress("UNCHECKED_CAST")
-            return InventoryViewModel(repository) as T
+            val mockAnimais = listOf(
+                AnimalModel(id = "1", name = "Estrela", earTag = "BR-1029", animalType = "Ovino", breed = "Santa Inês", sex = "Fêmea", weight = 45.0, salePrice = 850.0),
+                AnimalModel(id = "2", earTag = "BR-3341", animalType = "Bovino", breed = "Nelore", sex = "Macho", weight = 320.0, salePrice = 3500.0)
+            )
+            val mockDerivados = listOf(
+                DerivadoModel(id = "3", batchCode = "LT-001", productType = "Queijo", unit = "KG", quantity = 15.0, salePrice = 750.0),
+                DerivadoModel(id = "4", batchCode = "LT-002", productType = "Manta de Carneiro", unit = "UND", quantity = 2.0, salePrice = 300.0)
+            )
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    animais = mockAnimais,
+                    derivados = mockDerivados,
+                    valorTotalEstoque = calcularValorTotal(mockAnimais, mockDerivados)
+                )
+            }
         }
     }
 }
