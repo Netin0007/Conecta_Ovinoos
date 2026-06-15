@@ -17,12 +17,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.AnuncioViewModel
 import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
@@ -34,9 +36,14 @@ import java.util.Locale
 fun CreateAdScreen(
     navController: NavController,
     produtoId: String?,
-    inventoryViewModel: InventoryViewModel = viewModel(),
-    anuncioViewModel: AnuncioViewModel = viewModel() // Adeus, Factory!
+    inventoryViewModel: InventoryViewModel = viewModel()
 ) {
+    // Injeção do AnuncioViewModel com a Factory correta usando o ApplicationContext
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val anuncioViewModel: AnuncioViewModel = viewModel(
+        factory = AnuncioViewModel.Factory(app.anuncioRepository)
+    )
+
     val uiState by inventoryViewModel.uiState.collectAsState()
 
     // O sistema agora procura inteligentemente nas duas listas!

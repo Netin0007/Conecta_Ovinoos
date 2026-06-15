@@ -28,11 +28,18 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.conectaovinos.ui.screens.*
+import com.example.conectaovinos.ui.screens.AddTransactionScreen
+import com.example.conectaovinos.ui.screens.FinancialScreen
+import com.example.conectaovinos.ui.screens.MarketplaceScreen
+import com.example.conectaovinos.ui.screens.ProductDetailsScreen
+import com.example.conectaovinos.ui.screens.AnimalDetailsScreen
 import com.example.conectaovinos.ui.theme.*
 
 class MainActivity : ComponentActivity() {
@@ -57,29 +64,97 @@ fun ConectaOvinosMainUI() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = "welcome", // FORÇADO: Inicia sempre no portal de escolha
+            startDestination = "welcome",
             modifier = Modifier.padding(innerPadding)
         ) {
-            // Rota do Portal de Entrada
+            // ── PORTAL DE ENTRADA ──────────────────────────────────────────
             composable("welcome") {
                 WelcomeScreen(navController = navController)
             }
 
-            // Rotas do Produtor
-            composable("inventory") { InventoryScreen(navController) }
-            composable("dashboard") { DashboardScreen(navController) }
-            composable("community") { CommunityScreen(navController) }
-            composable("add_product") { AddProductScreen(navController) }
-            composable("add_product/{produtoId}") { backStackEntry ->
+            // ── ÁREA DO PRODUTOR ───────────────────────────────────────────
+            composable("inventory") {
+                InventoryScreen(navController)
+            }
+
+            composable("add_product") {
+                AddProductScreen(navController)
+            }
+
+            composable(
+                route = "add_product/{produtoId}",
+                arguments = listOf(navArgument("produtoId") { type = NavType.StringType })
+            ) { backStackEntry ->
                 val produtoId = backStackEntry.arguments?.getString("produtoId")
                 AddProductScreen(navController, produtoId)
             }
 
-            // Rotas do Marketplace / Anúncios
-            composable("marketplace") { MyAdsScreen(navController) }
-            composable("create_ad/{produtoId}") { backStackEntry ->
+            composable(
+                route = "create_ad/{produtoId}",
+                arguments = listOf(navArgument("produtoId") { type = NavType.StringType })
+            ) { backStackEntry ->
                 val produtoId = backStackEntry.arguments?.getString("produtoId")
                 CreateAdScreen(navController, produtoId)
+            }
+
+            // ── FINANCEIRO ─────────────────────────────────────────────────
+            composable("dashboard") {
+                DashboardScreen(navController)
+            }
+
+            composable("financial") {
+                FinancialScreen(navController)
+            }
+
+            composable("add_transaction_form") {
+                AddTransactionScreen(navController)  // tela já existe no projeto
+            }
+
+            // ── FEIRA (MARKETPLACE PÚBLICO) ────────────────────────────────
+            // ATENÇÃO: "feira" = tela pública para compradores (MarketplaceScreen)
+            composable("feira") {
+                MarketplaceScreen(
+                    navController = navController,
+                    onSwitchToProducer = {
+                        navController.navigate("inventory") {
+                            popUpTo("welcome") { inclusive = false }
+                        }
+                    },
+                    onLogout = {
+                        navController.navigate("welcome") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // Detalhes de um anúncio na feira (comprador vê o produto)
+            composable(
+                route = "product_details/{anuncioId}",
+                arguments = listOf(navArgument("anuncioId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val anuncioId = backStackEntry.arguments?.getString("anuncioId")
+                ProductDetailsScreen(navController, anuncioId)
+            }
+
+            // ── MEUS ANÚNCIOS (PRODUTOR) ───────────────────────────────────
+            // ATENÇÃO: "marketplace" = painel do produtor com os anúncios DELE (MyAdsScreen)
+            composable("marketplace") {
+                MyAdsScreen(navController)
+            }
+
+            // ── COMUNIDADE ─────────────────────────────────────────────────
+            composable("community") {
+                CommunityScreen(navController)
+            }
+
+            // ── DETALHES DO ANIMAL (aberto pelo produtor a partir do inventário) ──
+            composable(
+                route = "animal_details/{animalId}",
+                arguments = listOf(navArgument("animalId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val animalId = backStackEntry.arguments?.getString("animalId")
+                AnimalDetailsScreen(navController, animalId)
             }
         }
     }
@@ -115,7 +190,7 @@ fun WelcomeScreen(navController: NavHostController) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { navController.navigate("marketplace") },
+                .clickable { navController.navigate("feira") }, // ← CORRIGIDO PARA "feira"
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(4.dp)
@@ -156,33 +231,59 @@ fun WelcomeScreen(navController: NavHostController) {
 // Configuração Condicional da Barra Inferior
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
     object Inventory : BottomNavItem("inventory", "Estoque", Icons.Rounded.Inventory2)
-    object Marketplace : BottomNavItem("marketplace", "Feira", Icons.Rounded.Storefront)
+    object Feira      : BottomNavItem("feira", "Feira", Icons.Rounded.Storefront) // ← CORRIGIDO
     object Dashboard : BottomNavItem("dashboard", "Finanças", Icons.Rounded.Analytics)
     object Community : BottomNavItem("community", "Rede", Icons.Rounded.Forum)
 }
 
 @Composable
 fun AppBottomBar(navController: NavHostController) {
-    val items = listOf(BottomNavItem.Inventory, BottomNavItem.Marketplace, BottomNavItem.Dashboard, BottomNavItem.Community)
+    val items = listOf(
+        BottomNavItem.Inventory,
+        BottomNavItem.Feira,
+        BottomNavItem.Dashboard,
+        BottomNavItem.Community
+    )
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    val isWelcomeRoute = currentDestination?.route == "welcome"
-    val isAddProductRoute = currentDestination?.route?.startsWith("add_product") == true
-    val isCreateAdRoute = currentDestination?.route?.startsWith("create_ad") == true
+    // Rotas onde a barra deve ficar OCULTA
+    val rotasOcultas = setOf("welcome", "add_product", "create_ad", "add_transaction_form")
+    val rotaAtual = currentDestination?.route ?: ""
+    val deveOcultar = rotasOcultas.any { rotaAtual.startsWith(it) }
 
-    if (!isWelcomeRoute && !isAddProductRoute && !isCreateAdRoute) {
-        NavigationBar(containerColor = Color.White, contentColor = TerraBarro, tonalElevation = 8.dp) {
+    if (!deveOcultar) {
+        NavigationBar(
+            containerColor = Color.White,
+            contentColor = TerraBarro,
+            tonalElevation = 8.dp
+        ) {
             items.forEach { item ->
                 val isSelected = currentDestination?.hierarchy?.any { it.route == item.route } == true
                 NavigationBarItem(
-                    icon = { Icon(item.icon, contentDescription = item.title, tint = if (isSelected) TerraBarro else Color.Gray) },
-                    label = { Text(item.title, color = if (isSelected) TerraBarro else Color.Gray, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                    colors = NavigationBarItemDefaults.colors(indicatorColor = SolNordeste.copy(alpha = 0.2f)),
+                    icon = {
+                        Icon(
+                            item.icon,
+                            contentDescription = item.title,
+                            tint = if (isSelected) TerraBarro else Color.Gray
+                        )
+                    },
+                    label = {
+                        Text(
+                            item.title,
+                            color = if (isSelected) TerraBarro else Color.Gray,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = SolNordeste.copy(alpha = 0.2f)
+                    ),
                     selected = isSelected,
                     onClick = {
                         navController.navigate(item.route) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
                             launchSingleTop = true
                             restoreState = true
                         }
