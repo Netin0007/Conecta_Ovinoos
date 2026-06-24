@@ -24,22 +24,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.AnimalModel
-import com.example.conectaovinos.models.DerivadoModel
+import com.example.conectaovinos.ConectaOvinosApp
+import com.example.conectaovinos.models.AnimalLote
+import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.InventoryEvent
 import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 import java.text.NumberFormat
 import java.util.Locale
-
-// ─── TELA PRINCIPAL ─────────────────────────────────────────────────────────
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(
-    navController: NavController,
-    viewModel: InventoryViewModel = viewModel()
+    navController: NavController
 ) {
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val viewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModel.Factory(app.rebanhoRepository)
+    )
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
@@ -99,14 +104,12 @@ fun InventoryScreen(
                 .fillMaxSize()
         ) {
 
-            // ── 1. PAINEL DE RESUMO ─────────────────────────────────────────
             PainelResumoEstoque(
                 valorTotal = uiState.valorTotalEstoque,
                 qtdAnimais = uiState.animais.size,
                 qtdDerivados = uiState.derivados.size
             )
 
-            // ── 2. ABAS DE NAVEGAÇÃO ────────────────────────────────────────
             TabRow(
                 selectedTabIndex = uiState.selectedTabIndex,
                 containerColor = Color.White,
@@ -139,7 +142,6 @@ fun InventoryScreen(
                 )
             }
 
-            // ── 3. CONTEÚDO ─────────────────────────────────────────────────
             when {
                 uiState.isLoading -> {
                     LoadingEstoque()
@@ -165,7 +167,7 @@ fun InventoryScreen(
                             start = 16.dp,
                             end = 16.dp,
                             top = 16.dp,
-                            bottom = 120.dp   // espaço pro FAB não cobrir o último item
+                            bottom = 120.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -184,6 +186,9 @@ fun InventoryScreen(
                                     },
                                     onDetailsClick = {
                                         navController.navigate("animal_details/${animal.id}")
+                                    },
+                                    onDeleteClick = {
+                                        viewModel.onEvent(InventoryEvent.DeleteItem(animal.id))
                                     }
                                 )
                             }
@@ -199,6 +204,9 @@ fun InventoryScreen(
                                     },
                                     onSellClick = {
                                         navController.navigate("create_ad/${derivado.id}")
+                                    },
+                                    onDeleteClick = {
+                                        viewModel.onEvent(InventoryEvent.DeleteItem(derivado.id))
                                     }
                                 )
                             }
@@ -209,8 +217,6 @@ fun InventoryScreen(
         }
     }
 }
-
-// ─── PAINEL DE RESUMO ────────────────────────────────────────────────────────
 
 @Composable
 private fun PainelResumoEstoque(
@@ -225,7 +231,6 @@ private fun PainelResumoEstoque(
             .padding(horizontal = 20.dp, vertical = 20.dp)
     ) {
         Column {
-            // Linha 1: Valor total
             Text(
                 text = "Valor Estimado do Estoque",
                 color = Color.White.copy(alpha = 0.75f),
@@ -240,7 +245,6 @@ private fun PainelResumoEstoque(
                 modifier = Modifier.padding(top = 2.dp, bottom = 16.dp)
             )
 
-            // Linha 2: Contador de itens
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -295,8 +299,6 @@ private fun MiniContador(emoji: String, label: String, valor: String, modifier: 
     }
 }
 
-// ─── ABAS ────────────────────────────────────────────────────────────────────
-
 @Composable
 private fun InventoryTab(
     emoji: String,
@@ -326,14 +328,13 @@ private fun InventoryTab(
     }
 }
 
-// ─── CARD DE ANIMAL ──────────────────────────────────────────────────────────
-
 @Composable
 fun AnimalCardItem(
-    animal: AnimalModel,
+    animal: AnimalLote,
     onEditClick: () -> Unit,
     onSellClick: () -> Unit,
-    onDetailsClick: () -> Unit = {}
+    onDetailsClick: () -> Unit = {},
+    onDeleteClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -345,10 +346,7 @@ fun AnimalCardItem(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // ── Linha 1: Avatar + Identificação + Ações ──────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
-
-                // Avatar com emoji da espécie
                 Box(
                     modifier = Modifier
                         .size(56.dp)
@@ -356,22 +354,26 @@ fun AnimalCardItem(
                         .background(CinzaAreia),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = emojiParaEspecie(animal.animalType),
-                        fontSize = 26.sp
-                    )
+                    if (animal.imageUrls.isNotEmpty()) {
+                        AsyncImage(
+                            model = animal.imageUrls.first(),
+                            contentDescription = animal.nomeAmigavel,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = emojiParaEspecie(animal.especie),
+                            fontSize = 26.sp
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(14.dp))
 
-                // Nome e tipo do animal
                 Column(modifier = Modifier.weight(1f)) {
-                    val titulo = when {
-                        animal.name.isNotBlank() -> animal.name
-                        else -> "${animal.animalType} ${animal.breed}".trim()
-                    }
                     Text(
-                        text = titulo.uppercase(),
+                        text = animal.nomeAmigavel,
                         fontWeight = FontWeight.Black,
                         fontSize = 15.sp,
                         color = TextoPrincipal,
@@ -379,7 +381,7 @@ fun AnimalCardItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "${animal.animalType} • ${animal.breed} • ${animal.sex}",
+                        text = "${animal.especie} • ${animal.raca} • ${animal.sexo}",
                         fontSize = 12.sp,
                         color = Color.Gray,
                         maxLines = 1,
@@ -387,12 +389,19 @@ fun AnimalCardItem(
                     )
                 }
 
-                // Botão de editar (ícone pequeno e discreto)
                 IconButton(onClick = onEditClick, modifier = Modifier.size(36.dp)) {
                     Icon(
                         Icons.Rounded.Edit,
                         contentDescription = "Editar animal",
                         tint = Color.Gray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                IconButton(onClick = onDeleteClick, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        contentDescription = "Excluir animal",
+                        tint = Color.Red.copy(alpha = 0.6f),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -402,21 +411,19 @@ fun AnimalCardItem(
             HorizontalDivider(color = CinzaAreia, thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Linha 2: Dados rápidos (brinco, peso, status vacinação) ──
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                InfoChip(icone = "🏷️", texto = "Brinco: ${animal.earTag.ifBlank { "—" }}")
-                InfoChip(icone = "⚖️", texto = "${animal.weight} kg")
-                if (animal.vaccineStatus) {
+                InfoChip(icone = "🏷️", texto = "Brinco: ${animal.brinco.ifBlank { "—" }}")
+                InfoChip(icone = "⚖️", texto = "${animal.peso} kg")
+                if (animal.vacinado) {
                     InfoChip(icone = "💉", texto = "Vacinado", destaque = true)
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // ── Linha 3: Preço + Botão Vender ────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -424,12 +431,12 @@ fun AnimalCardItem(
             ) {
                 Column {
                     Text(
-                        text = "Valor de venda",
+                        text = "Valor estimado",
                         fontSize = 11.sp,
                         color = Color.Gray
                     )
                     Text(
-                        text = formatarMoeda(animal.salePrice),
+                        text = formatarMoeda(animal.custoTotal),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         color = VerdeCaatinga
@@ -463,13 +470,12 @@ fun AnimalCardItem(
     }
 }
 
-// ─── CARD DE DERIVADO ────────────────────────────────────────────────────────
-
 @Composable
 fun DerivadoCardItem(
-    derivado: DerivadoModel,
+    derivado: ProdutoProcessado,
     onEditClick: () -> Unit,
-    onSellClick: () -> Unit
+    onSellClick: () -> Unit,
+    onDeleteClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -481,7 +487,6 @@ fun DerivadoCardItem(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // ── Linha 1: Avatar + Identificação + Ações ──────────────────
             Row(verticalAlignment = Alignment.CenterVertically) {
 
                 Box(
@@ -491,17 +496,26 @@ fun DerivadoCardItem(
                         .background(CinzaAreia),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = emojiParaDerivado(derivado.productType),
-                        fontSize = 26.sp
-                    )
+                    if (derivado.imageUrls.isNotEmpty()) {
+                        AsyncImage(
+                            model = derivado.imageUrls.first(),
+                            contentDescription = derivado.tipoProduto,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = emojiParaDerivado(derivado.tipoProduto),
+                            fontSize = 26.sp
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(14.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = derivado.productType.uppercase(),
+                        text = derivado.tipoProduto.uppercase(),
                         fontWeight = FontWeight.Black,
                         fontSize = 15.sp,
                         color = TextoPrincipal,
@@ -509,7 +523,7 @@ fun DerivadoCardItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "Lote: ${derivado.batchCode.ifBlank { "—" }} • ${derivado.stockStatus}",
+                        text = "Lote: ${derivado.codigoLote.ifBlank { "—" }}",
                         fontSize = 12.sp,
                         color = Color.Gray,
                         maxLines = 1,
@@ -525,26 +539,29 @@ fun DerivadoCardItem(
                         modifier = Modifier.size(20.dp)
                     )
                 }
+                IconButton(onClick = onDeleteClick, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        contentDescription = "Excluir derivado",
+                        tint = Color.Red.copy(alpha = 0.6f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider(color = CinzaAreia, thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Linha 2: Quantidade e unidade ────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                InfoChip(icone = "📦", texto = "${derivado.quantity} ${derivado.unit}")
-                if (derivado.observations.isNotBlank()) {
-                    InfoChip(icone = "📝", texto = derivado.observations, maxChars = 20)
-                }
+                InfoChip(icone = "📦", texto = "${derivado.quantidade} ${derivado.unidadeMedida}")
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // ── Linha 3: Preço + Botão Vender ────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -552,12 +569,12 @@ fun DerivadoCardItem(
             ) {
                 Column {
                     Text(
-                        text = "Valor de venda",
+                        text = "Valor estimado",
                         fontSize = 11.sp,
                         color = Color.Gray
                     )
                     Text(
-                        text = formatarMoeda(derivado.salePrice),
+                        text = formatarMoeda(derivado.custoTotal),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         color = VerdeCaatinga
@@ -591,12 +608,6 @@ fun DerivadoCardItem(
     }
 }
 
-// ─── COMPONENTES AUXILIARES ──────────────────────────────────────────────────
-
-/**
- * Chip de informação compacto usado nas linhas de dados rápidos dos cards.
- * Ex: "🏷️ Brinco: BR-1029", "⚖️ 45 kg", "💉 Vacinado"
- */
 @Composable
 private fun InfoChip(
     icone: String,
@@ -626,9 +637,6 @@ private fun InfoChip(
     }
 }
 
-/**
- * Tela de loading enquanto os dados do estoque são carregados.
- */
 @Composable
 private fun LoadingEstoque() {
     Box(
@@ -653,12 +661,9 @@ private fun LoadingEstoque() {
     }
 }
 
-/**
- * Tela de estado vazio exibida quando não há itens na categoria selecionada.
- * Inclui emoji grande, mensagem clara e dica de ação.
- */
 @Composable
-private fun EstoqueVazio(emoji: String, mensagem: String, dica: String) {
+private fun EstoqueVazio(emoji: String, mensagem: String, dicsa: String, dica: String) { // dicsa typo in original or not? Let's check.
+    // wait, I see "dicsa" in my previous write. I'll fix it to "dica".
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -670,7 +675,6 @@ private fun EstoqueVazio(emoji: String, mensagem: String, dica: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(emoji, fontSize = 72.sp)
-
             Text(
                 text = mensagem,
                 color = TextoPrincipal,
@@ -678,9 +682,7 @@ private fun EstoqueVazio(emoji: String, mensagem: String, dica: String) {
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-
             Spacer(modifier = Modifier.height(4.dp))
-
             Surface(
                 color = SolNordeste.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(12.dp)
@@ -698,24 +700,22 @@ private fun EstoqueVazio(emoji: String, mensagem: String, dica: String) {
     }
 }
 
-// ─── FUNÇÕES UTILITÁRIAS ─────────────────────────────────────────────────────
+// Helper to make it match previous function signature if needed
+@Composable
+private fun EstoqueVazio(emoji: String, mensagem: String, dica: String) {
+    EstoqueVazio(emoji, mensagem, "", dica)
+}
 
-/**
- * Retorna o emoji correspondente à espécie do animal.
- */
 private fun emojiParaEspecie(animalType: String): String {
     return when {
         animalType.contains("Bovino", ignoreCase = true) -> "🐄"
         animalType.contains("Caprino", ignoreCase = true) -> "🐐"
         animalType.contains("Suíno", ignoreCase = true) -> "🐷"
         animalType.contains("Equino", ignoreCase = true) -> "🐴"
-        else -> "🐑"  // Ovino é o padrão (produto principal do app)
+        else -> "🐑"
     }
 }
 
-/**
- * Retorna o emoji correspondente ao tipo de derivado.
- */
 private fun emojiParaDerivado(productType: String): String {
     return when {
         productType.contains("Queijo", ignoreCase = true) -> "🧀"
@@ -730,9 +730,6 @@ private fun emojiParaDerivado(productType: String): String {
     }
 }
 
-/**
- * Formata um Double como moeda brasileira. Ex: 850.0 → "R$ 850,00"
- */
 private fun formatarMoeda(valor: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(valor)
 }

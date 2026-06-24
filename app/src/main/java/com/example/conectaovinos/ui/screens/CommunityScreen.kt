@@ -105,6 +105,7 @@ private fun AbaDicasRapidas() {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize()
     ) {
+        /*
         item {
             CardAudioDica(
                 titulo = "Atenção aos vermes nas primeiras chuvas",
@@ -119,6 +120,7 @@ private fun AbaDicasRapidas() {
                 autor = "Zeca do Emater"
             )
         }
+        */
     }
 }
 
@@ -133,6 +135,7 @@ private fun AbaMercado() {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize()
     ) {
+        /*
         item {
             CardCotacao(animal = "Ovelha Gorda (Abate)", preco = "R$ 11,50 / kg vivo", tendencia = "Subiu 0,50")
             Spacer(modifier = Modifier.height(16.dp))
@@ -153,6 +156,7 @@ private fun AbaMercado() {
                 )
             }
         }
+        */
     }
 }
 

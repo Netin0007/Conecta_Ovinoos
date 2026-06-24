@@ -20,6 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
@@ -77,8 +79,16 @@ fun ProductCard(
                     .background(Brush.verticalGradient(colors = listOf(CinzaAreia, Color(0xFFE2DED4)))),
                 contentAlignment = Alignment.Center
             ) {
-                // Emoji Dinâmico renderizado aqui
-                Text(emoji, fontSize = 72.sp)
+                if (produto.imageUrls.isNotEmpty()) {
+                    AsyncImage(
+                        model = produto.imageUrls.first(),
+                        contentDescription = produto.nomeAmigavel,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(emoji, fontSize = 72.sp)
+                }
 
                 IconButton(
                     onClick = { isFavorite = !isFavorite },

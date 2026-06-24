@@ -10,6 +10,10 @@ data class Anuncio(
     val custoAnimal: Double,
     val precoVenda: Double,
     val descricao: String,
+    val imageUrls: List<String> = emptyList(),
     val ativo: Boolean,
-    val dataCriacao: Date
+    val dataCriacao: Date,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val endereco: String = ""
 )

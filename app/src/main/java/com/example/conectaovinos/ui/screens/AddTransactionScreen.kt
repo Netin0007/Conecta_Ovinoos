@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,8 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,6 +31,7 @@ import com.example.conectaovinos.ui.viewmodels.DashboardViewModel
 @Composable
 fun AddTransactionScreen(navController: NavController) {
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val focusManager = LocalFocusManager.current
     val viewModel: DashboardViewModel = viewModel(
         factory = DashboardViewModel.Factory(app.transacaoRepository)
     )
@@ -92,7 +96,8 @@ fun AddTransactionScreen(navController: NavController) {
                 onValueChange = { descricao = it },
                 label = { Text("Descrição (ex: Compra de ração, Venda de queijo)") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -103,7 +108,7 @@ fun AddTransactionScreen(navController: NavController) {
                 label = { Text("Valor (R$)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -113,7 +118,9 @@ fun AddTransactionScreen(navController: NavController) {
                 onValueChange = { categoria = it },
                 label = { Text("Categoria (ex: Insumos, Saúde, Venda de Animal)") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
             )
 
             Spacer(modifier = Modifier.height(32.dp))

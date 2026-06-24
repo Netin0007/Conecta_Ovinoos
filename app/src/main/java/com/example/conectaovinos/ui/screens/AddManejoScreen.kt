@@ -3,6 +3,8 @@ package com.example.conectaovinos.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,12 +13,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.conectaovinos.models.AnimalModel
+import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
 
@@ -26,12 +30,13 @@ fun AddManejoScreen(
     navController: NavController,
     viewModel: InventoryViewModel = viewModel() // Instanciação moderna, sem Factory!
 ) {
+    val focusManager = LocalFocusManager.current
     // Pegamos o estado novo que criamos no passo anterior
     val uiState by viewModel.uiState.collectAsState()
     val animais = uiState.animais
 
     // Estados do Formulário
-    var animalSelecionado by remember { mutableStateOf<AnimalModel?>(null) }
+    var animalSelecionado by remember { mutableStateOf<AnimalLote?>(null) }
     var tipoManejo by remember { mutableStateOf("") }
     var dataManejo by remember { mutableStateOf("") }
     var observacoes by remember { mutableStateOf("") }
@@ -85,7 +90,7 @@ fun AddManejoScreen(
                         onExpandedChange = { expandirAnimais = !expandirAnimais }
                     ) {
                         OutlinedTextField(
-                            value = animalSelecionado?.let { "${it.animalType} - ${it.name.ifEmpty { it.earTag }}" } ?: "Selecione o Animal",
+                            value = animalSelecionado?.let { "${it.especie} - ${it.nome.ifEmpty { it.brinco }}" } ?: "Selecione o Animal",
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("Animal Alvo") },
@@ -102,7 +107,7 @@ fun AddManejoScreen(
                             } else {
                                 animais.forEach { animal ->
                                     DropdownMenuItem(
-                                        text = { Text("${animal.animalType} - ${animal.name.ifEmpty { "Brinco: " + animal.earTag }}") },
+                                        text = { Text("${animal.especie} - ${animal.nome.ifEmpty { "Brinco: " + animal.brinco }}") },
                                         onClick = {
                                             animalSelecionado = animal
                                             expandirAnimais = false
@@ -149,7 +154,9 @@ fun AddManejoScreen(
                         onValueChange = { dataManejo = it },
                         label = { Text("Data (DD/MM/AAAA)") },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                     )
 
                     // 4. OBSERVAÇÕES
@@ -158,7 +165,10 @@ fun AddManejoScreen(
                         onValueChange = { observacoes = it },
                         label = { Text("Observações (Ex: Nome da vacina, dosagem)") },
                         modifier = Modifier.fillMaxWidth().height(100.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
                     )
                 }
             }

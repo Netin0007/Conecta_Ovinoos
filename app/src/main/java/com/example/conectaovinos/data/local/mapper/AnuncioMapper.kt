@@ -12,8 +12,12 @@ fun AnuncioEntity.toModel() = Anuncio(
     custoAnimal = custoAnimal,
     precoVenda = precoVenda,
     descricao = descricao,
+    imageUrls = imageUrls.split(",").filter { it.isNotEmpty() },
     ativo = ativo,
-    dataCriacao = Date(dataCriacaoMs)
+    dataCriacao = Date(dataCriacaoMs),
+    latitude = latitude,
+    longitude = longitude,
+    endereco = endereco
 )
 
 fun Anuncio.toEntity() = AnuncioEntity(
@@ -24,6 +28,10 @@ fun Anuncio.toEntity() = AnuncioEntity(
     custoAnimal = custoAnimal,
     precoVenda = precoVenda,
     descricao = descricao,
+    imageUrls = imageUrls.joinToString(","),
     ativo = ativo,
-    dataCriacaoMs = dataCriacao.time
+    dataCriacaoMs = dataCriacao.time,
+    latitude = latitude,
+    longitude = longitude,
+    endereco = endereco
 )

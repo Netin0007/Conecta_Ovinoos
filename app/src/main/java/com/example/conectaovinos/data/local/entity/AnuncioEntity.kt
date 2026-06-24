@@ -12,6 +12,10 @@ data class AnuncioEntity(
     val custoAnimal: Double,
     val precoVenda: Double,
     val descricao: String,
+    val imageUrls: String = "", // Lista de URLs separadas por vírgula
     val ativo: Boolean = true,
-    val dataCriacaoMs: Long
+    val dataCriacaoMs: Long,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val endereco: String = ""
 )

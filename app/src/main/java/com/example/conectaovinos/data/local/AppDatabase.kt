@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.conectaovinos.data.local.dao.AnuncioDao
 import com.example.conectaovinos.data.local.dao.RebanhoDao
@@ -19,9 +20,10 @@ import java.util.Date
 
 @Database(
     entities = [AnimalEntity::class, ProdutoDerivadoEntity::class, TransacaoEntity::class, AnuncioEntity::class],
-    version = 3, // Truque Ninja: Versão 3 força a recriação limpa do banco de dados!
+    version = 6, // Incrementado para versão 6 devido à mudança para múltiplas fotos e localização
     exportSchema = false
 )
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun rebanhoDao(): RebanhoDao
@@ -39,37 +41,32 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "conecta_ovinos.db"
                 )
-                    .fallbackToDestructiveMigration() // Se a versão mudar, ele apaga o velho e recria
-                    .addCallback(SeedCallback())  // popula o banco na primeira abertura
+                    .fallbackToDestructiveMigration()
+                    .addCallback(SeedCallback())
                     .build()
                     .also { INSTANCE = it }
             }
         }
     }
 
-    // Popula o banco com dados de exemplo alinhados com o novo chassi da Fazenda
     private class SeedCallback : Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
-            // Roda em background para não travar a UI
             INSTANCE?.let { database ->
                 CoroutineScope(Dispatchers.IO).launch {
                     val agora = System.currentTimeMillis()
 
-                    // --- INJETANDO OS NOVOS LOTES ---
+                    // --- INJETANDO OS NOVOS LOTES COM O SCHEMA ATUALIZADO ---
                     database.rebanhoDao().inserirAnimal(
-                        AnimalEntity("1", 2500.0, agora, "Ovino", 10)
+                        AnimalEntity("1", 2500.0, agora, "", "Ovino", 10, "Lote Mococa", "BR-100", "Santa Inês", "Fêmea", 450.0, true, null, null, "Tauá, CE")
                     )
                     database.rebanhoDao().inserirAnimal(
-                        AnimalEntity("2", 15000.0, agora, "Bovino", 5)
-                    )
-                    database.rebanhoDao().inserirAnimal(
-                        AnimalEntity("3", 3300.0, agora, "Caprino", 15)
+                        AnimalEntity("2", 15000.0, agora, "", "Bovino", 5, "Bezerros Nelore", "BR-200", "Nelore", "Macho", 1200.0, true, null, null, "Tauá, CE")
                     )
 
                     // --- INJETANDO OS PRODUTOS PROCESSADOS ---
                     database.rebanhoDao().inserirDerivado(
-                        ProdutoDerivadoEntity("p1", 75.0, agora, "Queijo de Cabra", "Unidade", 5.0)
+                        ProdutoDerivadoEntity("p1", 75.0, agora, "", "Queijo de Cabra", "Unidade", 5.0, "LOTE-001", null, null, "Tauá, CE")
                     )
 
                     // --- TRANSAÇÕES FINANCEIRAS ---
@@ -81,9 +78,6 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     database.transacaoDao().inserirTransacao(
                         TransacaoEntity("t3", "Venda de 5 Queijos", 125.0, "Receita", Date().time, "Venda de Derivado")
-                    )
-                    database.transacaoDao().inserirTransacao(
-                        TransacaoEntity("t4", "Medicamentos (Vermífugo)", 80.0, "Despesa", Date().time, "Saúde")
                     )
                 }
             }

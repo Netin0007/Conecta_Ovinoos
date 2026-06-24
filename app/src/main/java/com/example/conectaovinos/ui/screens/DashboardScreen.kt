@@ -6,6 +6,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -46,8 +48,14 @@ fun DashboardScreen(navController: NavController) {
                 title = { Text("MEU DINHEIRO", fontWeight = FontWeight.Black) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
-                    titleContentColor = Color.White
-                )
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                ),
+                actions = {
+                    IconButton(onClick = { navController.navigate("financial") }) {
+                        Icon(Icons.Default.List, contentDescription = "Ver Extrato")
+                    }
+                }
             )
         }
     ) { innerPadding ->

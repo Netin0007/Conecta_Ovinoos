@@ -22,11 +22,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.AnimalLote
-import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.AnimalDetailsViewModel
@@ -35,16 +36,9 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * Tela de Detalhes do Produto/Lote (AnimalDetailsScreen).
- * @author Equipe ConectaFazenda
- * @description Exibe o detalhamento técnico e financeiro de um lote ou produto processado,
- * integrando os dados de custo com o módulo de vendas (Marketplace).
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
-    // --- INJEÇÃO DE DEPENDÊNCIA (VM E REPOSITÓRIO) ---
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
 
     val detailsViewModel: AnimalDetailsViewModel = viewModel(
@@ -54,21 +48,18 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
         factory = AnuncioViewModel.Factory(app.anuncioRepository)
     )
 
-    // --- OBSERVAÇÃO DE ESTADO ---
     val todosProdutos by detailsViewModel.produtos.collectAsState()
     val todosAnuncios by anuncioViewModel.todosAnuncios.collectAsState()
 
-    // Encontra o Produto (AnimalLote ou ProdutoProcessado) no Repositório Unificado
     val produto = todosProdutos.find { it.id == animalId }
-    val jaAnunciado = todosAnuncios.any { it.animalId == animalId && it.ativo }
+    val anuncioAtivo = todosAnuncios.find { it.animalId == animalId && it.ativo }
+    val jaAnunciado = anuncioAtivo != null
 
     Scaffold(
         containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = {
-                    Text("FICHA DE CONTROLE", fontWeight = FontWeight.Black, fontSize = 16.sp)
-                },
+                title = { Text("FICHA TÉCNICA", fontWeight = FontWeight.Black, fontSize = 18.sp) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = TerraBarro,
                     titleContentColor = Color.White,
@@ -83,237 +74,178 @@ fun AnimalDetailsScreen(navController: NavController, animalId: String?) {
         }
     ) { innerPadding ->
 
-        // --- ESTADOS DE CARREGAMENTO (LOADING / NOT FOUND) ---
-        if (todosProdutos.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = TerraBarro)
-            }
-            return@Scaffold
-        }
-
         if (produto == null) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("Registro não encontrado no estoque.", color = Color.Gray)
+                if (todosProdutos.isEmpty()) {
+                    CircularProgressIndicator(color = TerraBarro)
+                } else {
+                    Text("Registro não encontrado no estoque.", color = Color.Gray)
+                }
             }
             return@Scaffold
         }
 
-        // --- CONFIGURAÇÃO DINÂMICA DE UI (EMOJIS E BADGES) ---
         val emoji = when (produto) {
-            is AnimalLote -> when (produto.especie.lowercase()) {
-                "bovino" -> "🐄"
-                "caprino" -> "🐐"
-                "suíno", "suino" -> "🐖"
-                else -> "🐑"
-            }
-            is ProdutoProcessado -> if (produto.tipoProduto.lowercase().contains("carne")) "🥩" else "🧀"
-        }
-
-        val badgeText = when (produto) {
-            is AnimalLote -> produto.especie.uppercase()
-            is ProdutoProcessado -> "DERIVADO"
+            is AnimalLote -> emojiParaEspecie(produto.especie)
+            is ProdutoProcessado -> emojiParaDerivado(produto.tipoProduto)
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
+            modifier = Modifier.fillMaxSize().padding(innerPadding).verticalScroll(rememberScrollState())
         ) {
-            // --- HEADER: FOTO (EMOJI) E TÍTULO ---
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(TerraBarro)
-                    .padding(bottom = 32.dp),
+                modifier = Modifier.fillMaxWidth().background(TerraBarro).padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .padding(4.dp),
+                        modifier = Modifier.size(100.dp).clip(CircleShape).background(Color.White),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(emoji, fontSize = 64.sp)
+                        if (produto.imageUrls.isNotEmpty()) {
+                            AsyncImage(
+                                model = produto.imageUrls.first(),
+                                contentDescription = produto.nomeAmigavel,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(emoji, fontSize = 56.sp)
+                        }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = produto.nomeAmigavel.uppercase(),
                         color = SolNordeste,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 1.sp
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        Surface(color = VerdeCaatinga, shape = RoundedCornerShape(16.dp)) {
+                    if (jaAnunciado) {
+                        Surface(
+                            color = SolNordeste,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
                             Text(
-                                text = badgeText,
-                                color = Color.White,
+                                "ANÚNCIO ATIVO NA FEIRA",
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                color = TextoPrincipal
                             )
-                        }
-                        if (jaAnunciado) {
-                            Surface(color = SolNordeste, shape = RoundedCornerShape(16.dp)) {
-                                Text(
-                                    text = "EM VENDA",
-                                    color = TextoPrincipal,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
                         }
                     }
                 }
             }
 
-            // --- CORPO: DADOS FINANCEIROS E TÉCNICOS ---
-            Column(
-                modifier = Modifier
-                    .offset(y = (-20).dp)
-                    .padding(horizontal = 16.dp)
-            ) {
-                // Painel de Precificação (Custo vs Margem de Venda)
+            Column(modifier = Modifier.offset(y = (-20).dp).padding(horizontal = 16.dp)) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(4.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp).fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text("Custo do Lote", fontSize = 12.sp, color = Color.Gray)
-                            Text(
-                                formatCurrencyDetails(produto.custoTotal),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Black,
-                                color = VermelhoBarro
-                            )
-                        }
-                        VerticalDivider(modifier = Modifier.height(40.dp))
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("Venda Estimada", fontSize = 12.sp, color = Color.Gray)
-                            Text(
-                                formatCurrencyDetails(produto.custoTotal * 1.5), // Margem de 50%
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Black,
-                                color = VerdeCaatinga
-                            )
-                        }
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text("Valor no Estoque", fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text(
+                            formatarMoeda(produto.custoTotal),
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Black,
+                            color = VerdeCaatinga
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    "DADOS TÉCNICOS",
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Gray,
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
-                )
+                Text("DETALHES DO REGISTRO", fontWeight = FontWeight.Black, color = Color.Gray, fontSize = 13.sp)
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Detalhe 1: Data do Registro no Inventário
-                    DetailItem(
-                        icon = Icons.Default.DateRange,
-                        label = "Registrado em",
-                        value = formatTimestamp(produto.dataRegistro),
-                        modifier = Modifier.weight(1f)
-                    )
-                    // Detalhe 2: Status Comercial
-                    DetailItem(
-                        icon = Icons.Default.Info,
-                        label = "Status",
-                        value = if (jaAnunciado) "Em Venda" else "Em Estoque",
-                        modifier = Modifier.weight(1f)
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (produto is AnimalLote) {
+                        DetailRow("Espécie", produto.especie)
+                        DetailRow("Raça", produto.raca.ifBlank { "Não informada" })
+                        DetailRow("Sexo", produto.sexo)
+                        DetailRow("Brinco", produto.brinco.ifBlank { "Sem identificação" })
+                        DetailRow("Peso", "${produto.peso} kg")
+                        DetailRow("Vacinação", if (produto.vacinado) "Em dia ✅" else "Pendente ⚠️")
+                    } else if (produto is ProdutoProcessado) {
+                        DetailRow("Tipo", produto.tipoProduto)
+                        DetailRow("Lote", produto.codigoLote.ifBlank { "—" })
+                        DetailRow("Quantidade", "${produto.quantidade} ${produto.unidadeMedida}")
+                    }
+                    DetailRow("Cadastrado em", formatTimestamp(produto.dataRegistro))
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // --- BOTÕES DE AÇÃO (MARKETPLACE) ---
                 if (jaAnunciado) {
-                    OutlinedButton(
-                        onClick = {
-                            val anuncioId = todosAnuncios
-                                .firstOrNull { it.animalId == animalId && it.ativo }?.id
-                            if (anuncioId != null) {
-                                navController.navigate("product_details/$anuncioId")
-                            }
-                        },
+                    Button(
+                        onClick = { navController.navigate("product_details/${anuncioAtivo?.id}") },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                        border = androidx.compose.foundation.BorderStroke(2.dp, VerdeCaatinga),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = VerdeCaatinga),
+                        colors = ButtonDefaults.buttonColors(containerColor = SolNordeste, contentColor = TextoPrincipal),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("VER ANÚNCIO ATIVO", fontWeight = FontWeight.Black)
+                        Text("VER ANÚNCIO NA FEIRA", fontWeight = FontWeight.Black)
                     }
                 } else {
                     Button(
-                        onClick = { navController.navigate("create_ad_form/${produto.id}") },
+                        onClick = { navController.navigate("create_ad/${produto.id}") },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = SolNordeste, contentColor = TextoPrincipal),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = ButtonDefaults.buttonElevation(6.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("ANUNCIAR PARA VENDA", fontWeight = FontWeight.Black)
+                        Text("VENDER NA FEIRA", fontWeight = FontWeight.Black)
                     }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                OutlinedButton(
+                    onClick = { /* TODO: Implementar edição */ },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("EDITAR INFORMAÇÕES", fontWeight = FontWeight.Bold)
                 }
             }
         }
     }
 }
 
-/**
- * Componente isolado para exibição de métricas do produto.
- */
 @Composable
-fun DetailItem(icon: ImageVector, label: String, value: String, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(12.dp)
+fun DetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(8.dp)).padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = TerraBarro, modifier = Modifier.size(24.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(label, fontSize = 11.sp, color = Color.Gray)
-            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextoPrincipal)
-        }
+        Text(label, color = Color.Gray, fontWeight = FontWeight.Bold)
+        Text(value, fontWeight = FontWeight.Black, color = TextoPrincipal)
     }
 }
 
-/**
- * Função utilitária para formatação monetária segura.
- */
-private fun formatCurrencyDetails(value: Double): String {
-    return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
+private fun formatarMoeda(valor: Double): String {
+    return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(valor)
 }
 
-/**
- * Função utilitária para converter Timestamp (Long) em Data Legível (String).
- */
 private fun formatTimestamp(timeInMillis: Long): String {
     val formatter = SimpleDateFormat("dd/MM/yyyy", Locale("pt", "BR"))
     return formatter.format(Date(timeInMillis))
+}
+
+private fun emojiParaEspecie(especie: String): String {
+    return when (especie.lowercase()) {
+        "bovino" -> "🐄"
+        "caprino" -> "🐐"
+        "suíno", "suino" -> "🐖"
+        else -> "🐑"
+    }
+}
+
+private fun emojiParaDerivado(tipo: String): String {
+    return if (tipo.lowercase().contains("carne")) "🥩" else "🧀"
 }

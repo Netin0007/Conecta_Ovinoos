@@ -1,33 +1,48 @@
 package com.example.conectaovinos.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.AnuncioViewModel
 import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
+import com.example.conectaovinos.ui.components.PhotoCarouselPicker
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -35,32 +50,40 @@ import java.util.Locale
 @Composable
 fun CreateAdScreen(
     navController: NavController,
-    produtoId: String?,
-    inventoryViewModel: InventoryViewModel = viewModel()
+    produtoId: String?
 ) {
-    // Injeção do AnuncioViewModel com a Factory correta usando o ApplicationContext
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val focusManager = LocalFocusManager.current
+    
+    // Injetando os ViewModels com as Factories corretas
+    val inventoryViewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModel.Factory(app.rebanhoRepository)
+    )
     val anuncioViewModel: AnuncioViewModel = viewModel(
         factory = AnuncioViewModel.Factory(app.anuncioRepository)
     )
 
-    val uiState by inventoryViewModel.uiState.collectAsState()
+    val inventoryState by inventoryViewModel.uiState.collectAsState()
 
-    // O sistema agora procura inteligentemente nas duas listas!
-    val animal = uiState.animais.find { it.id == produtoId }
-    val derivado = uiState.derivados.find { it.id == produtoId }
+    // Busca o item no estado real do inventário
+    val animal = inventoryState.animais.find { it.id == produtoId }
+    val derivado = inventoryState.derivados.find { it.id == produtoId }
+    val item = animal ?: derivado
 
-    val itemExiste = animal != null || derivado != null
+    val itemExiste = item != null
 
-    // Monta o nome dependendo do que ele achou
-    val nomeItem = animal?.let { "${it.animalType} ${it.name.ifEmpty { it.earTag }}" }
-        ?: derivado?.productType
-        ?: ""
-
-    val custoAtual = animal?.salePrice ?: derivado?.salePrice ?: 0.0
+    val nomeItem = item?.nomeAmigavel ?: ""
+    val custoAtual = item?.custoTotal ?: 0.0
 
     var precoVenda by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
+    var photoUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        photoUris = photoUris + uris
+    }
 
     val quickTags = listOf("Saudável", "Vacinado", "Pronta Entrega", "Negociável", "Excelente Genética")
 
@@ -83,7 +106,6 @@ fun CreateAdScreen(
         }
     ) { innerPadding ->
 
-        // Tratamento caso o ID tenha sido apagado ou não exista
         if (!itemExiste) {
             Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
                 Text("Item não encontrado no estoque.", color = Color.Gray, fontWeight = FontWeight.Bold)
@@ -103,7 +125,6 @@ fun CreateAdScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // RESUMO DO ITEM
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(12.dp),
@@ -113,26 +134,35 @@ fun CreateAdScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Item Selecionado:", fontSize = 12.sp, color = Color.Gray)
                     Text(nomeItem.uppercase(), fontWeight = FontWeight.Black, fontSize = 18.sp, color = TextoPrincipal)
-                    Text("Custo/Valor Atual: ${formatarMoeda(custoAtual)}", color = VermelhoBarro, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text("Valor no Estoque: ${formatarMoeda(custoAtual)}", color = Color.Gray, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
 
-            // DADOS DE VENDA
+            Text("Fotos do Anúncio", fontWeight = FontWeight.Bold, color = TerraBarro)
+            PhotoCarouselPicker(
+                photoUris = photoUris.ifEmpty { item?.imageUrls?.map { Uri.parse(it) } ?: emptyList() },
+                onAddClick = { photoPickerLauncher.launch("image/*") },
+                onRemoveClick = { index ->
+                    photoUris = photoUris.toMutableList().apply { removeAt(index) }
+                }
+            )
+
             OutlinedTextField(
                 value = precoVenda,
                 onValueChange = { precoVenda = it },
-                label = { Text("Por quanto deseja vender?") },
+                label = { Text("Preço de Venda") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                 shape = RoundedCornerShape(12.dp),
                 prefix = { Text("R$ ") },
+                singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = VerdeCaatinga,
                     focusedLabelColor = VerdeCaatinga
                 )
             )
 
-            // PAINEL DE LUCRO INTERATIVO
             Surface(
                 color = if (isLucroPositivo) VerdeCaatinga.copy(alpha = 0.1f) else CinzaAreia,
                 shape = RoundedCornerShape(12.dp),
@@ -143,7 +173,7 @@ fun CreateAdScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Lucro Estimado:", fontWeight = FontWeight.Bold, color = if (isLucroPositivo) VerdeCaatinga else Color.Gray)
+                    Text("Diferença p/ Estoque:", fontWeight = FontWeight.Bold, color = if (isLucroPositivo) VerdeCaatinga else Color.Gray)
                     Text(
                         text = if (precoDigitado > 0) formatarMoeda(lucro) else "R$ 0,00",
                         fontWeight = FontWeight.Black,
@@ -153,9 +183,6 @@ fun CreateAdScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // DESCRIÇÃO E TAGS RÁPIDAS
             Text("Descrição Comercial", fontWeight = FontWeight.Bold, color = TerraBarro)
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -177,19 +204,24 @@ fun CreateAdScreen(
                 label = { Text("Detalhes para o comprador") },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 shape = RoundedCornerShape(12.dp),
-                placeholder = { Text("Use as tags acima ou digite mais detalhes...") }
+                placeholder = { Text("Use as tags acima ou digite mais detalhes...") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // BOTÃO DE PUBLICAR
             Button(
                 onClick = {
-                    if (precoDigitado > 0) {
-                        // TODO no futuro: anuncioViewModel.publicarAnuncio(...)
-                        navController.navigate("marketplace") {
-                            popUpTo("inventory") { inclusive = false }
-                        }
+                    if (precoDigitado > 0 && item != null) {
+                        anuncioViewModel.publicarAnuncio(
+                            item, 
+                            precoDigitado, 
+                            descricao, 
+                            if (photoUris.isNotEmpty()) photoUris.map { it.toString() } else null
+                        )
+                        navController.popBackStack()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(64.dp),
@@ -199,11 +231,11 @@ fun CreateAdScreen(
                     contentColor = TextoPrincipal,
                     disabledContainerColor = Color.LightGray
                 ),
-                enabled = isLucroPositivo
+                enabled = precoDigitado > 0
             ) {
                 Icon(Icons.Rounded.Storefront, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("ENVIAR PARA A FEIRA", fontWeight = FontWeight.Black, fontSize = 16.sp, letterSpacing = 1.sp)
+                Text("PUBLICAR NA FEIRA", fontWeight = FontWeight.Black, fontSize = 16.sp, letterSpacing = 1.sp)
             }
         }
     }

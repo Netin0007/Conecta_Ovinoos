@@ -21,10 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -41,6 +43,7 @@ import com.example.conectaovinos.ui.screens.MarketplaceScreen
 import com.example.conectaovinos.ui.screens.ProductDetailsScreen
 import com.example.conectaovinos.ui.screens.AnimalDetailsScreen
 import com.example.conectaovinos.ui.theme.*
+import com.example.conectaovinos.ui.viewmodels.CadastroViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,7 +81,11 @@ fun ConectaOvinosMainUI() {
             }
 
             composable("add_product") {
-                AddProductScreen(navController)
+                val app = LocalContext.current.applicationContext as ConectaOvinosApp
+                val viewModel: CadastroViewModel = viewModel(
+                    factory = CadastroViewModel.Factory(app.rebanhoRepository)
+                )
+                AddProductScreen(navController, viewModel = viewModel)
             }
 
             composable(
@@ -86,7 +93,11 @@ fun ConectaOvinosMainUI() {
                 arguments = listOf(navArgument("produtoId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val produtoId = backStackEntry.arguments?.getString("produtoId")
-                AddProductScreen(navController, produtoId)
+                val app = LocalContext.current.applicationContext as ConectaOvinosApp
+                val viewModel: CadastroViewModel = viewModel(
+                    factory = CadastroViewModel.Factory(app.rebanhoRepository)
+                )
+                AddProductScreen(navController, produtoId, viewModel = viewModel)
             }
 
             composable(
@@ -141,11 +152,6 @@ fun ConectaOvinosMainUI() {
             // ATENÇÃO: "marketplace" = painel do produtor com os anúncios DELE (MyAdsScreen)
             composable("marketplace") {
                 MyAdsScreen(navController)
-            }
-
-            // ── COMUNIDADE ─────────────────────────────────────────────────
-            composable("community") {
-                CommunityScreen(navController)
             }
 
             // ── DETALHES DO ANIMAL (aberto pelo produtor a partir do inventário) ──
@@ -233,7 +239,6 @@ sealed class BottomNavItem(val route: String, val title: String, val icon: Image
     object Inventory : BottomNavItem("inventory", "Estoque", Icons.Rounded.Inventory2)
     object Feira      : BottomNavItem("feira", "Feira", Icons.Rounded.Storefront) // ← CORRIGIDO
     object Dashboard : BottomNavItem("dashboard", "Finanças", Icons.Rounded.Analytics)
-    object Community : BottomNavItem("community", "Rede", Icons.Rounded.Forum)
 }
 
 @Composable
@@ -241,16 +246,15 @@ fun AppBottomBar(navController: NavHostController) {
     val items = listOf(
         BottomNavItem.Inventory,
         BottomNavItem.Feira,
-        BottomNavItem.Dashboard,
-        BottomNavItem.Community
+        BottomNavItem.Dashboard
     )
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
     // Rotas onde a barra deve ficar OCULTA
-    val rotasOcultas = setOf("welcome", "add_product", "create_ad", "add_transaction_form")
+    val rotasOcultas = setOf("welcome")
     val rotaAtual = currentDestination?.route ?: ""
-    val deveOcultar = rotasOcultas.any { rotaAtual.startsWith(it) }
+    val deveOcultar = rotasOcultas.any { rotaAtual == it }
 
     if (!deveOcultar) {
         NavigationBar(
@@ -280,11 +284,15 @@ fun AppBottomBar(navController: NavHostController) {
                     ),
                     selected = isSelected,
                     onClick = {
+                        // Navega para a aba selecionada limpando o que estiver acima da raiz
                         navController.navigate(item.route) {
+                            // Se a aba já estiver aberta, volta para o início dela (PopUpTo)
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }
+                            // Evita criar múltiplas instâncias da mesma aba
                             launchSingleTop = true
+                            // Restaura o estado anterior (scroll, etc) se existir
                             restoreState = true
                         }
                     }

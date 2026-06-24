@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
@@ -19,10 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.conectaovinos.ConectaOvinosApp
@@ -40,18 +46,33 @@ fun MarketplaceScreen(
     onSwitchToProducer: () -> Unit = {}
 ) {
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val focusManager = LocalFocusManager.current
     val viewModel: AnuncioViewModel = viewModel(
         factory = AnuncioViewModel.Factory(app.anuncioRepository)
     )
 
     var searchQuery by remember { mutableStateOf("") }
     var categoriaSelecionada by remember { mutableStateOf("Todos") }
-    val categorias = listOf("Todos", "Animais", "Derivados")
+    val categorias = listOf("Todos", "Animais", "Derivados", "Favoritos")
+    
+    val especies = listOf("Ovino", "Bovino", "Caprino", "Suíno", "Equino", "Outro")
+    val tiposDerivado = listOf("Leite", "Queijo", "Carne", "Manta de Carneiro", "Lã", "Pele", "Iogurte", "Manteiga", "Outro")
 
     // Apenas anúncios ativos, publicados pelo produtor
     val anunciosAtivos by viewModel.anunciosAtivos.collectAsState()
+    
+    // Simulação de favoritos para a aba funcionar (em um app real seria um StateFlow no ViewModel)
+    val favoritosIds = remember { mutableStateListOf<String>() }
+
     val anunciosFiltrados = anunciosAtivos.filter { anuncio ->
-        anuncio.nomeAnimal.contains(searchQuery, ignoreCase = true)
+        val matchesSearch = anuncio.nomeAnimal.contains(searchQuery, ignoreCase = true)
+        val matchesCategory = when (categoriaSelecionada) {
+            "Animais" -> anuncio.racaAnimal in especies
+            "Derivados" -> anuncio.racaAnimal in tiposDerivado
+            "Favoritos" -> anuncio.id in favoritosIds
+            else -> true
+        }
+        matchesSearch && matchesCategory
     }
 
     Scaffold(
@@ -144,7 +165,9 @@ fun MarketplaceScreen(
                             unfocusedBorderColor = Color.Transparent
                         ),
                         shape = RoundedCornerShape(16.dp),
-                        singleLine = true
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
                     )
                 }
             }
@@ -203,8 +226,13 @@ fun MarketplaceScreen(
                 }
             } else {
                 items(count = anunciosFiltrados.size) { index ->
+                    val anuncio = anunciosFiltrados[index]
                     AnuncioMarketplaceCard(
-                        anuncio = anunciosFiltrados[index],
+                        anuncio = anuncio,
+                        isFavoriteInitial = anuncio.id in favoritosIds,
+                        onFavoriteToggle = { isFav ->
+                            if (isFav) favoritosIds.add(anuncio.id) else favoritosIds.remove(anuncio.id)
+                        },
                         onVerDetalhes = { id ->
                             navController.navigate("product_details/$id")
                         }
@@ -216,8 +244,17 @@ fun MarketplaceScreen(
 }
 
 @Composable
-fun AnuncioMarketplaceCard(anuncio: Anuncio, onVerDetalhes: (String) -> Unit) {
-    var isFavorite by remember { mutableStateOf(false) }
+fun AnuncioMarketplaceCard(
+    anuncio: Anuncio,
+    isFavoriteInitial: Boolean,
+    onFavoriteToggle: (Boolean) -> Unit,
+    onVerDetalhes: (String) -> Unit
+) {
+    var isFavorite by remember { mutableStateOf(isFavoriteInitial) }
+    
+    LaunchedEffect(isFavoriteInitial) {
+        isFavorite = isFavoriteInitial
+    }
 
     Card(
         modifier = Modifier
@@ -235,9 +272,21 @@ fun AnuncioMarketplaceCard(anuncio: Anuncio, onVerDetalhes: (String) -> Unit) {
                     .background(CinzaAreia),
                 contentAlignment = Alignment.Center
             ) {
-                Text("🐑", fontSize = 72.sp)
+                if (anuncio.imageUrls.isNotEmpty()) {
+                    AsyncImage(
+                        model = anuncio.imageUrls.first(),
+                        contentDescription = anuncio.nomeAnimal,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text("🐑", fontSize = 72.sp)
+                }
                 IconButton(
-                    onClick = { isFavorite = !isFavorite },
+                    onClick = { 
+                        isFavorite = !isFavorite
+                        onFavoriteToggle(isFavorite)
+                    },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
@@ -282,7 +331,13 @@ fun AnuncioMarketplaceCard(anuncio: Anuncio, onVerDetalhes: (String) -> Unit) {
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Tauá, CE", fontSize = 13.sp, color = Color.DarkGray)
+                    Text(
+                        text = anuncio.endereco.ifBlank { "Tauá, CE" },
+                        fontSize = 13.sp,
+                        color = Color.DarkGray,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 Button(

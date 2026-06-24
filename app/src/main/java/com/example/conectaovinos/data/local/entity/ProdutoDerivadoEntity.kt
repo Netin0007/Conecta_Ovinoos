@@ -8,7 +8,12 @@ data class ProdutoDerivadoEntity(
     @PrimaryKey val id: String,
     val custoTotal: Double,
     val dataRegistro: Long,
+    val imageUrls: String = "", // Lista de URLs separadas por vírgula
     val tipoProduto: String,
     val unidadeMedida: String,
-    val quantidade: Double
+    val quantidade: Double,
+    val codigoLote: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val endereco: String = ""
 )

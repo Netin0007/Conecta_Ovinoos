@@ -22,9 +22,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.conectaovinos.ConectaOvinosApp
-import com.example.conectaovinos.models.AnimalModel
-import com.example.conectaovinos.models.DerivadoModel
 import com.example.conectaovinos.models.Anuncio
+import com.example.conectaovinos.models.AnimalLote
+import com.example.conectaovinos.models.ProdutoProcessado
 import com.example.conectaovinos.ui.theme.*
 import com.example.conectaovinos.ui.viewmodels.AnuncioViewModel
 import com.example.conectaovinos.ui.viewmodels.InventoryViewModel
@@ -34,13 +34,14 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyAdsScreen(navController: NavController) {
-    // CORREÇÃO CRÍTICA: Resgatando o contexto e injetando as Factories obrigatórias para não dar Crash!
     val app = LocalContext.current.applicationContext as ConectaOvinosApp
 
     val anuncioViewModel: AnuncioViewModel = viewModel(
         factory = AnuncioViewModel.Factory(app.anuncioRepository)
     )
-    val inventoryViewModel: InventoryViewModel = viewModel() // Mantido vazio pois é o Mock temporário
+    val inventoryViewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModel.Factory(app.rebanhoRepository)
+    )
 
     val todosAnuncios by anuncioViewModel.todosAnuncios.collectAsState()
     val uiState by inventoryViewModel.uiState.collectAsState()
@@ -117,8 +118,8 @@ fun MyAdsScreen(navController: NavController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProdutoPickerSheet(
-    animais: List<AnimalModel>,
-    derivados: List<DerivadoModel>,
+    animais: List<AnimalLote>,
+    derivados: List<ProdutoProcessado>,
     anunciosAtivos: List<Anuncio>,
     onItemSelected: (String) -> Unit,
     onDismiss: () -> Unit
@@ -138,16 +139,16 @@ fun ProdutoPickerSheet(
                 LazyColumn {
                     items(animais, key = { it.id }) { animal ->
                         val jaAnunciado = animal.id in idsJaAnunciados
-                        val emoji = if (animal.animalType.contains("Bovino", true)) "🐄" else "🐑"
-                        val titulo = animal.name.ifEmpty { "${animal.animalType} ${animal.breed}" }
+                        val emoji = emojiParaEspecie(animal.especie)
+                        val titulo = animal.nomeAmigavel
 
-                        ItemFilaBottomSheet(emoji = emoji, titulo = titulo, subtitulo = "Brinco: ${animal.earTag}", jaAnunciado = jaAnunciado, onClick = { onItemSelected(animal.id) })
+                        ItemFilaBottomSheet(emoji = emoji, titulo = titulo, subtitulo = "Brinco: ${animal.brinco}", jaAnunciado = jaAnunciado, onClick = { onItemSelected(animal.id) })
                     }
                     items(derivados, key = { it.id }) { derivado ->
                         val jaAnunciado = derivado.id in idsJaAnunciados
-                        val emoji = if (derivado.productType.contains("Queijo", true)) "🧀" else "🥩"
+                        val emoji = emojiParaDerivado(derivado.tipoProduto)
 
-                        ItemFilaBottomSheet(emoji = emoji, titulo = derivado.productType, subtitulo = "Lote: ${derivado.batchCode} • ${derivado.quantity} ${derivado.unit}", jaAnunciado = jaAnunciado, onClick = { onItemSelected(derivado.id) })
+                        ItemFilaBottomSheet(emoji = emoji, titulo = derivado.tipoProduto, subtitulo = "Lote: ${derivado.codigoLote} • ${derivado.quantidade} ${derivado.unidadeMedida}", jaAnunciado = jaAnunciado, onClick = { onItemSelected(derivado.id) })
                     }
                 }
             }
@@ -219,4 +220,17 @@ fun AnuncioCard(anuncio: Anuncio, onPausar: () -> Unit, onReativar: () -> Unit, 
 
 private fun formatarMoeda(valor: Double): String {
     return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(valor)
+}
+
+private fun emojiParaEspecie(especie: String): String {
+    return when (especie.lowercase()) {
+        "bovino" -> "🐄"
+        "caprino" -> "🐐"
+        "suíno", "suino" -> "🐖"
+        else -> "🐑"
+    }
+}
+
+private fun emojiParaDerivado(tipo: String): String {
+    return if (tipo.lowercase().contains("carne")) "🥩" else "🧀"
 }

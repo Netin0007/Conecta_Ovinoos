@@ -70,4 +70,6 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
 
+    // Image loading
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }

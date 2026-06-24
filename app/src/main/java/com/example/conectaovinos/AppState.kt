@@ -5,6 +5,7 @@ import com.example.conectaovinos.models.AnimalLote
 import com.example.conectaovinos.models.Produto
 import com.example.conectaovinos.models.ProdutoProcessado
 
+/*
 // Dados de teste atualizados para o novo chassi da fazenda
 val rebanhoGlobal = mutableStateListOf<Produto>(
     AnimalLote(
@@ -33,3 +34,5 @@ val rebanhoGlobal = mutableStateListOf<Produto>(
         custoTotal = 3300.0
     )
 )
+*/
+val rebanhoGlobal = mutableStateListOf<Produto>()

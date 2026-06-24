@@ -37,8 +37,9 @@ class AnuncioViewModel(private val repository: AnuncioRepository) : ViewModel() 
      * @param produto O Lote Vivo ou Produto Processado que será vendido.
      * @param precoVenda Valor final estipulado pelo produtor.
      * @param descricao Texto de apoio para marketing do produto.
+     * @param novasImagensUrls Lista de URLs ou Caminhos das novas fotos (opcional).
      */
-    fun publicarAnuncio(produto: Produto, precoVenda: Double, descricao: String) {
+    fun publicarAnuncio(produto: Produto, precoVenda: Double, descricao: String, novasImagensUrls: List<String>? = null) {
         viewModelScope.launch {
             // Extrai o detalhe dinâmico (Espécie se for bicho, Tipo se for queijo/carne)
             val detalheProduto = when (produto) {
@@ -55,8 +56,12 @@ class AnuncioViewModel(private val repository: AnuncioRepository) : ViewModel() 
                     custoAnimal = produto.custoTotal,
                     precoVenda = precoVenda,
                     descricao = descricao,
+                    imageUrls = novasImagensUrls ?: produto.imageUrls,
                     ativo = true,
-                    dataCriacao = Date()
+                    dataCriacao = Date(),
+                    latitude = produto.latitude,
+                    longitude = produto.longitude,
+                    endereco = produto.endereco
                 )
             )
         }

@@ -46,6 +46,12 @@ class DashboardViewModel(private val repository: TransacaoRepository) : ViewMode
     fun getLucroLiquido(lista: List<Transacao>) =
         getTotalReceitas(lista) - getTotalDespesas(lista)
 
+    fun deletarTransacao(id: String) {
+        viewModelScope.launch {
+            repository.removeTransacao(id)
+        }
+    }
+
     class Factory(private val repository: TransacaoRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")

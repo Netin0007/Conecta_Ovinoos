@@ -6,53 +6,67 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.conectaovinos.ConectaOvinosApp
 import com.example.conectaovinos.models.TipoTransacao
 import com.example.conectaovinos.models.Transacao
+import com.example.conectaovinos.ui.theme.TerraBarro
+import com.example.conectaovinos.ui.theme.VerdeCaatinga
+import com.example.conectaovinos.ui.theme.CinzaAreia
+import com.example.conectaovinos.ui.viewmodels.DashboardViewModel
 import java.text.NumberFormat
 import java.util.*
-
-val dummyTransactionList = listOf(
-    Transacao(id = "1", descricao = "Venda da Mococa 01", valor = 750.0, tipo = TipoTransacao.Receita, data = Date(), categoria = "Venda de Animal"),
-    Transacao(id = "2", descricao = "Compra de Ração", valor = 320.0, tipo = TipoTransacao.Despesa, data = Date(), categoria = "Insumos"),
-    Transacao(id = "3", descricao = "Venda de 5 Queijos", valor = 125.0, tipo = TipoTransacao.Receita, data = Date(), categoria = "Venda de Derivado"),
-    Transacao(id = "4", descricao = "Medicamentos (Vermífugo)", valor = 80.0, tipo = TipoTransacao.Despesa, data = Date(), categoria = "Saúde")
-)
-
-private fun formatCurrency(value: Double): String {
-    return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinancialScreen(navController: NavController) {
-    val totalReceitas = dummyTransactionList.filter { it.tipo == TipoTransacao.Receita }.sumOf { it.valor }
-    val totalDespesas = dummyTransactionList.filter { it.tipo == TipoTransacao.Despesa }.sumOf { it.valor }
-    val lucroLiquido = totalReceitas - totalDespesas
+    val app = LocalContext.current.applicationContext as ConectaOvinosApp
+    val viewModel: DashboardViewModel = viewModel(
+        factory = DashboardViewModel.Factory(app.transacaoRepository)
+    )
+
+    val transacoes by viewModel.transacoes.collectAsState()
+    val totalReceitas = viewModel.getTotalReceitas(transacoes)
+    val totalDespesas = viewModel.getTotalDespesas(transacoes)
+    val lucroLiquido = viewModel.getLucroLiquido(transacoes)
 
     Scaffold(
+        containerColor = CinzaAreia,
         topBar = {
             TopAppBar(
-                title = { Text("Controle Financeiro") },
+                title = { Text("EXTRATO FINANCEIRO", fontWeight = FontWeight.Black) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                    containerColor = TerraBarro,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                ),
+                navigationIcon = {
+                    IconButton(onClick = { navController.navigateUp() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                    }
+                }
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = {navController.navigate("add_transaction_form")},
-                containerColor = MaterialTheme.colorScheme.secondary
+                onClick = { navController.navigate("add_transaction_form") },
+                containerColor = VerdeCaatinga,
+                contentColor = Color.White
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "Adicionar Transação")
             }
@@ -65,9 +79,15 @@ fun FinancialScreen(navController: NavController) {
         ) {
             FinancialDashboard(totalReceitas, totalDespesas, lucroLiquido)
 
-            LazyColumn(modifier = Modifier.padding(horizontal = 16.dp)) {
-                items(dummyTransactionList) { transacao ->
-                    TransactionListItem(transacao = transacao)
+            LazyColumn(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(bottom = 32.dp)
+            ) {
+                items(transacoes) { transacao ->
+                    TransactionListItem(
+                        transacao = transacao,
+                        onDelete = { viewModel.deletarTransacao(transacao.id) }
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -129,27 +149,55 @@ fun FinancialDashboard(receitas: Double, despesas: Double, lucro: Double) {
 }
 
 @Composable
-fun TransactionListItem(transacao: Transacao) {
+fun TransactionListItem(transacao: Transacao, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(transacao.descricao, fontWeight = FontWeight.Bold)
-                Text(transacao.categoria, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    transacao.descricao.uppercase(),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 14.sp,
+                    color = Color.DarkGray
+                )
+                Text(
+                    transacao.categoria,
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Bold
+                )
             }
-            Text(
-                text = if (transacao.tipo == TipoTransacao.Receita) "+ ${formatCurrency(transacao.valor)}" else "- ${formatCurrency(transacao.valor)}",
-                color = if (transacao.tipo == TipoTransacao.Receita) Color(0xFF008000) else Color.Red,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if (transacao.tipo == TipoTransacao.Receita) "+ ${formatCurrency(transacao.valor)}" else "- ${formatCurrency(transacao.valor)}",
+                    color = if (transacao.tipo == TipoTransacao.Receita) VerdeCaatinga else TerraBarro,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Deletar",
+                        tint = Color.Red.copy(alpha = 0.5f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
+}
+
+private fun formatCurrency(value: Double): String {
+    return NumberFormat.getCurrencyInstance(Locale("pt", "BR")).format(value)
 }
